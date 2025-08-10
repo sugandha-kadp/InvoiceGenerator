@@ -1,0 +1,3048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Invoice Generator</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    body { 
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        padding: 20px;
+    }
+    
+    .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    
+    .header {
+        background: linear-gradient(135deg, #1F4E79 0%, #2563eb 100%);
+        color: white;
+        padding: 30px;
+        text-align: center;
+    }
+    
+    .header h1 {
+        font-size: 2.5rem;
+        font-weight: 300;
+        margin-bottom: 10px;
+    }
+    
+    .header p {
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+    
+    .main-content {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 30px;
+        padding: 30px;
+    }
+    
+    .left-panel {
+        display: flex;
+        flex-direction: column;
+        gap: 25px;
+    }
+    
+    .right-panel {
+        background: #f8fafc;
+        border-radius: 15px;
+        padding: 25px;
+        height: fit-content;
+        position: sticky;
+        top: 20px;
+    }
+    
+    .form-section {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+    }
+    
+    .form-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+    }
+    
+    .form-section h3 {
+        color: #1e293b;
+        font-size: 1.4rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .form-section h3::before {
+        content: '';
+        width: 4px;
+        height: 25px;
+        background: linear-gradient(135deg, #1F4E79, #2563eb);
+        border-radius: 2px;
+    }
+    
+    .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+    }
+    
+    .form-grid.single {
+        grid-template-columns: 1fr;
+    }
+    
+    .field-group {
+        margin-bottom: 20px;
+    }
+    
+    label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+        font-size: 0.95rem;
+    }
+    
+    input, select, textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e2e8f0;
+        border-radius: 10px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: white;
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+        touch-action: manipulation;
+    }
+    
+    input:focus, select:focus, textarea:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        transform: translateY(-1px);
+    }
+    
+    input:hover, select:hover {
+        border-color: #94a3b8;
+        transform: translateY(-1px);
+    }
+    
+    @keyframes slideIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+    }
+    
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+    }
+    
+    @keyframes slideOut {
+        from {
+            opacity: 1;
+            transform: translateX(0);
+            max-height: 100px;
+        }
+        to {
+            opacity: 0;
+            transform: translateX(-100px);
+            max-height: 0;
+            padding: 0;
+            margin: 0;
+        }
+    }
+    
+    .form-section {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        animation: slideIn 0.6s ease-out;
+    }
+    
+    .animated-input {
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    .price-calculated {
+        animation: pulse 0.5s ease-in-out;
+        border-color: #10b981 !important;
+        background: #f0fdf4;
+    }
+    
+    .hourly-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 5px;
+        font-size: 0.85rem;
+        color: #6b7280;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .hourly-info.show {
+        opacity: 1;
+    }
+    
+    .calculation-badge {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-left: 8px;
+        animation: slideIn 0.3s ease;
+    }
+    
+    /* Modern Field Validation Styles */
+    .field-error {
+        border-color: #ef4444 !important;
+        background: #fef2f2 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1) !important;
+        animation: shake 0.5s ease-in-out, errorHighlight 2s ease-in-out;
+    }
+    
+    .field-error:focus {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+    }
+    
+    .field-success {
+        border-color: #10b981 !important;
+        background: #f0fdf4 !important;
+        box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+        animation: successPulse 0.6s ease-in-out;
+    }
+    
+    .field-group.error {
+        animation: fieldGroupShake 0.5s ease-in-out;
+    }
+    
+    .field-group.error label {
+        color: #ef4444 !important;
+        animation: labelError 0.3s ease-in-out;
+    }
+    
+    .field-group.error label::after {
+        content: ' *';
+        color: #ef4444;
+        font-weight: bold;
+        animation: blinkError 1s ease-in-out infinite;
+    }
+    
+    @keyframes errorHighlight {
+        0% { background: #fef2f2; }
+        50% { background: #fee2e2; }
+        100% { background: #fef2f2; }
+    }
+    
+    @keyframes successPulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    
+    @keyframes fieldGroupShake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-8px); }
+        75% { transform: translateX(8px); }
+    }
+    
+    @keyframes labelError {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    
+    @keyframes blinkError {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    select {
+        cursor: pointer;
+    }
+    
+    .custom-input {
+        margin-top: 10px;
+        border-color: #10b981;
+    }
+    
+    .btn {
+        background: linear-gradient(135deg, #1F4E79, #2563eb);
+        color: white;
+        padding: 14px 28px;
+        border: none;
+        border-radius: 10px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        touch-action: manipulation;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        min-height: 44px; /* iOS touch target minimum */
+    }
+    
+    .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(31, 78, 121, 0.3);
+    }
+    
+    .btn.field-error {
+        background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+        animation: shake 0.5s ease-in-out, buttonErrorPulse 2s ease-in-out;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
+    }
+    
+    @keyframes buttonErrorPulse {
+        0%, 100% { 
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            transform: scale(1);
+        }
+        50% { 
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            transform: scale(1.02);
+        }
+    }
+    
+    .btn-primary {
+        background: linear-gradient(135deg, #10b981, #059669);
+        font-size: 1.1rem;
+        padding: 16px 32px;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .btn-secondary {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        margin-bottom: 20px;
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .invoice-preview {
+        background: white;
+        border: 2px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 0;
+        overflow: hidden;
+    }
+    
+    .preview-header {
+        background: linear-gradient(135deg, #f8fafc, #e2e8f0);
+        padding: 15px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    
+    #invoiceOutput {
+        background: white;
+        color: black;
+        font-size: 14px;
+        line-height: 1.4;
+        padding: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        min-height: 400px;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+        width: 100%;
+        max-width: 800px;
+        margin: 0 auto;
+        box-sizing: border-box;
+    }
+    
+    #invoiceOutput * {
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+        color-adjust: exact;
+    }
+    
+    #invoiceOutput table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        font-size: 12px;
+        background: white;
+        page-break-inside: avoid;
+    }
+    
+    #invoiceOutput th {
+        background: linear-gradient(135deg, #1F4E79, #2563eb);
+        font-weight: 600;
+        padding: 10px 8px;
+        font-size: 12px;
+        border: 1px solid #cbd5e1;
+        color: white;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    #invoiceOutput td {
+        padding: 8px;
+        font-size: 12px;
+        border: 1px solid #cbd5e1;
+        page-break-inside: avoid;
+    }
+    
+    #invoiceOutput h2 {
+        margin-top: 0;
+        color: #1F4E79;
+        font-size: 28px;
+        margin-bottom: 15px;
+        font-weight: 700;
+        text-align: center;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    #invoiceOutput h3 {
+        color: #1F4E79;
+        font-weight: 600;
+        font-size: 16px;
+        margin: 15px 0 10px 0;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+    
+    #invoiceOutput p {
+        margin: 6px 0;
+        font-size: 14px;
+        color: #374151;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+    }
+    
+    .items-list {
+        max-height: 300px;
+        overflow-y: auto;
+        margin: 15px 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+    }
+    
+    .item-row {
+        padding: 12px;
+        border-bottom: 1px solid #f1f5f9;
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr auto;
+        gap: 10px;
+        align-items: center;
+        font-size: 0.9rem;
+    }
+    
+    .item-row:last-child {
+        border-bottom: none;
+    }
+    
+    .item-row:nth-child(even) {
+        background: #f8fafc;
+    }
+    
+    .delete-btn {
+        background: #ef4444;
+        color: white;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.8rem;
+    }
+    
+    .delete-btn:hover {
+        background: #dc2626;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        background: #dcfce7;
+        color: #166534;
+    }
+    
+    /* Saved Details Cards Styles */
+    .saved-cards {
+        display: grid;
+        gap: 15px;
+        margin: 20px 0;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+    
+    .bank-card {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border: 2px solid #e2e8f0;
+        border-radius: 12px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        animation: slideIn 0.3s ease;
+    }
+    
+    .bank-card:hover {
+        border-color: #2563eb;
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(37, 99, 235, 0.15);
+    }
+    
+    .bank-card.selected {
+        border-color: #10b981;
+        background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.2);
+    }
+    
+    .bank-card h4 {
+        margin: 0 0 12px 0;
+        color: #1e293b;
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .bank-card .bank-details {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        font-size: 0.9rem;
+        color: #475569;
+    }
+    
+    .bank-card .bank-detail-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .bank-card .bank-detail-label {
+        font-weight: 600;
+        color: #374151;
+    }
+    
+    .bank-card .bank-detail-value {
+        font-family: 'Consolas', monospace;
+        color: #1e293b;
+        font-weight: 500;
+    }
+    
+    .bank-card .card-actions {
+        position: absolute;
+        top: 15px;
+        right: 15px;
+        display: flex;
+        gap: 8px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .bank-card:hover .card-actions {
+        opacity: 1;
+    }
+    
+    .card-action-btn {
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 6px 8px;
+        cursor: pointer;
+        font-size: 0.8rem;
+        transition: all 0.2s ease;
+    }
+    
+    .card-action-btn:hover {
+        background: white;
+        transform: scale(1.05);
+    }
+    
+    .card-action-btn.delete {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+    
+    .card-action-btn.delete:hover {
+        background: #ef4444;
+        color: white;
+    }
+    
+    .current-bank-indicator {
+        display: inline-block;
+        background: #10b981;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+    
+    /* Invoice Output Responsive Grid Override */
+    @media (max-width: 900px) {
+        #invoiceOutput div[style*="grid-template-columns"] {
+            display: block !important;
+        }
+        
+        #invoiceOutput div[style*="grid-template-columns"] > div {
+            margin-bottom: 20px !important;
+        }
+        
+        #invoiceOutput div[style*="gap: 40px"] {
+            gap: 20px !important;
+        }
+        
+        #invoiceOutput {
+            width: 100% !important;
+            max-width: 100% !important;
+        }
+    }
+    
+    @media (max-width: 1024px) {
+        .main-content {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .right-panel {
+            position: static;
+        }
+    }
+    
+    @media (max-width: 768px) {
+        body {
+            padding: 10px;
+        }
+        
+        .container {
+            margin: 0;
+            border-radius: 15px;
+        }
+        
+        .header {
+            padding: 20px 15px;
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+        }
+        
+        .header p {
+            font-size: 1rem;
+        }
+        
+        .main-content {
+            padding: 15px;
+            gap: 20px;
+            grid-template-columns: 1fr;
+        }
+        
+        .form-section {
+            padding: 20px 15px;
+        }
+        
+        .form-section h3 {
+            font-size: 1.2rem;
+        }
+        
+        .form-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .field-group {
+            margin-bottom: 15px;
+        }
+        
+        input, select, textarea {
+            padding: 14px 16px;
+            font-size: 16px; /* Prevents zoom on iOS */
+        }
+        
+        .btn {
+            padding: 16px 24px;
+            font-size: 1rem;
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .right-panel {
+            padding: 15px;
+        }
+        
+        .invoice-preview {
+            border-radius: 10px;
+        }
+        
+        #invoiceOutput {
+            padding: 0;
+            font-size: 14px;
+            width: 100% !important;
+            max-width: 100% !important;
+            transform: none !important;
+        }
+        
+        #invoiceOutput > div {
+            padding: 15px !important;
+        }
+        
+        #invoiceOutput h2 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+        }
+        
+        #invoiceOutput h3 {
+            font-size: 1.2rem;
+            margin-bottom: 12px;
+        }
+        
+        #invoiceOutput p {
+            font-size: 14px;
+            margin: 8px 0;
+        }
+        
+        #invoiceOutput table {
+            font-size: 12px;
+            margin: 15px 0;
+        }
+        
+        #invoiceOutput th, #invoiceOutput td {
+            padding: 8px 6px;
+            font-size: 12px;
+        }
+        
+        /* Make grid layouts stack on mobile */
+        #invoiceOutput div[style*="display: flex"] {
+            display: block !important;
+        }
+        
+        #invoiceOutput div[style*="width: 48%"] {
+            width: 100% !important;
+            margin-bottom: 15px !important;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .btn-secondary {
+            margin-bottom: 0;
+            padding: 16px;
+        }
+        
+        .items-list {
+            max-height: 250px;
+        }
+        
+        .item-row {
+            grid-template-columns: 1fr;
+            gap: 8px;
+            padding: 15px 12px;
+            text-align: left;
+        }
+        
+        .item-row > div {
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+        
+        .item-row > div:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+        
+        .delete-btn {
+            align-self: flex-start;
+            margin-top: 5px;
+        }
+        
+        .saved-cards {
+            max-height: 300px;
+        }
+        
+        .bank-card {
+            padding: 15px;
+        }
+        
+        .bank-card .bank-details {
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+        
+        .bank-card .card-actions {
+            position: static;
+            opacity: 1;
+            margin-bottom: 10px;
+            justify-content: flex-end;
+        }
+        
+        .hourly-info, .calculation-badge {
+            font-size: 0.8rem;
+        }
+    }
+    
+    /* iPhone 12 and similar devices (390px width) */
+    @media (max-width: 414px) {
+        body {
+            padding: 5px;
+        }
+        
+        .container {
+            border-radius: 10px;
+        }
+        
+        .header {
+            padding: 15px 10px;
+        }
+        
+        .header h1 {
+            font-size: 1.6rem;
+        }
+        
+        .main-content {
+            padding: 10px;
+            gap: 15px;
+        }
+        
+        .form-section {
+            padding: 15px 10px;
+        }
+        
+        .form-section h3 {
+            font-size: 1.1rem;
+            margin-bottom: 15px;
+        }
+        
+        input, select, textarea {
+            padding: 12px 14px;
+            font-size: 16px;
+        }
+        
+        .btn {
+            padding: 14px 20px;
+            font-size: 0.95rem;
+        }
+        
+        .right-panel {
+            padding: 10px;
+        }
+        
+        #invoiceOutput {
+            padding: 0;
+            font-size: 13px;
+            min-height: 300px;
+            width: 100% !important;
+            max-width: 100% !important;
+            transform: none !important;
+        }
+        
+        #invoiceOutput > div {
+            padding: 10px !important;
+        }
+        
+        #invoiceOutput h2 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+        }
+        
+        #invoiceOutput h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+        }
+        
+        #invoiceOutput p {
+            font-size: 13px;
+            margin: 6px 0;
+        }
+        
+        #invoiceOutput table {
+            font-size: 11px;
+            margin: 12px 0;
+        }
+        
+        #invoiceOutput th, #invoiceOutput td {
+            padding: 6px 4px;
+            font-size: 11px;
+        }
+        
+        /* Stack all layouts on iPhone */
+        #invoiceOutput div[style*="display: flex"] {
+            display: block !important;
+        }
+        
+        #invoiceOutput div[style*="width: 48%"] {
+            width: 100% !important;
+            margin-bottom: 10px !important;
+        }
+        
+        .bank-card {
+            padding: 12px;
+        }
+        
+        .bank-card h4 {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        
+        .bank-card .bank-detail-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+        }
+        
+        .bank-card .bank-detail-value {
+            font-size: 0.85rem;
+        }
+        
+        .current-bank-indicator {
+            font-size: 0.6rem;
+            padding: 1px 6px;
+        }
+        
+        .item-row {
+            padding: 12px 8px;
+            font-size: 0.85rem;
+        }
+        
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+        }
+    }
+    
+    /* Landscape mode for mobile devices */
+    @media (max-height: 500px) and (orientation: landscape) {
+        .main-content {
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .right-panel {
+            position: static;
+        }
+        
+        .form-section {
+            padding: 15px;
+        }
+        
+        .saved-cards {
+            max-height: 200px;
+        }
+        
+        .items-list {
+            max-height: 150px;
+        }
+    }
+    
+    /* Ensure invoice preview doesn't break on mobile */
+    @media print {
+        body {
+            background: white;
+            padding: 0;
+        }
+        
+        .container {
+            box-shadow: none;
+            border-radius: 0;
+        }
+        
+        .main-content {
+            grid-template-columns: 1fr;
+            padding: 0;
+        }
+        
+        .left-panel {
+            display: none;
+        }
+        
+        .right-panel {
+            background: white;
+            padding: 0;
+            position: static;
+        }
+        
+        .action-buttons {
+            display: none;
+        }
+        
+        .preview-header {
+            display: none;
+        }
+        
+        .invoice-preview {
+            border: none;
+            border-radius: 0;
+        }
+        
+        #invoiceOutput {
+            padding: 20px;
+            font-size: 12pt;
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+        
+        #invoiceOutput * {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+        
+        #invoiceOutput h2 {
+            font-size: 24pt;
+            color: #1F4E79 !important;
+            print-color-adjust: exact;
+        }
+        
+        #invoiceOutput h3 {
+            font-size: 14pt;
+            color: #1F4E79 !important;
+            print-color-adjust: exact;
+        }
+        
+        #invoiceOutput p {
+            font-size: 11pt;
+        }
+        
+        #invoiceOutput table {
+            font-size: 10pt;
+            page-break-inside: avoid;
+        }
+        
+        #invoiceOutput th {
+            background: #1F4E79 !important;
+            color: white !important;
+            print-color-adjust: exact;
+        }
+        
+        #invoiceOutput th, #invoiceOutput td {
+            padding: 8px;
+            font-size: 10pt;
+        }
+        
+        #invoiceOutput div[style*="background"] {
+            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact;
+        }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Invoice Generator</h1>
+        <p>Professional invoice creation made simple</p>
+    </div>
+    
+    <div class="main-content">
+        <div class="left-panel">
+            <div class="form-section">
+                <h3>Bank Details</h3>
+                <div class="form-grid single">
+                    <div class="field-group">
+                        <label>Saved Bank Details</label>
+                        <select id="bankDetailsSelect" onchange="handleBankDetailsChange()">
+                            <option value="">🏦 Select saved bank details</option>
+                            <option value="new">✏️ Add New Bank Details</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Saved Bank Details Cards -->
+                <div id="savedBankCards" class="saved-cards" style="display: none;">
+                    <!-- Cards will be populated here -->
+                </div>
+                
+                <!-- Bank Details Form -->
+                <div id="bankDetailsForm" style="display: none;">
+                    <div class="form-grid">
+                        <div class="field-group">
+                            <label>Bank Name</label>
+                            <input id="bank" type="text" placeholder="Enter bank name">
+                        </div>
+                        <div class="field-group">
+                            <label>Account Name</label>
+                            <input id="accName" type="text" placeholder="Enter account name">
+                        </div>
+                        <div class="field-group">
+                            <label>BSB</label>
+                            <input id="bsb" type="text" placeholder="Enter BSB (6 digits)" maxlength="6" oninput="validateBSB(this)">
+                        </div>
+                        <div class="field-group">
+                            <label>Account Number</label>
+                            <input id="accNumber" type="text" placeholder="Enter account number (6 digits)" maxlength="6" oninput="validateAccountNumber(this)">
+                        </div>
+                    </div>
+                    <button class="btn" onclick="saveBankDetails()">💾 Save Bank Details</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Invoice Details</h3>
+                <div class="form-grid">
+                    <div class="field-group">
+                        <label>Invoice Date</label>
+                        <input id="invoiceDate" type="date" onchange="updateInvoice()">
+                    </div>
+                    <div class="field-group">
+                        <label>Invoice Number</label>
+                        <input id="invoiceNumber" type="text" placeholder="INV-001" oninput="updateInvoice(); updateInvoiceNumberHelper()">
+                    </div>
+                    <div class="field-group">
+                        <label>To (Customer)</label>
+                        <select id="customerSelect" onchange="handleCustomerChange()">
+                            <option value="">👤 Select saved customer</option>
+                            <option value="custom">✏️ New Customer (Type Custom)</option>
+                        </select>
+                        <input id="to" type="text" placeholder="Customer name" class="custom-input animated-input" oninput="updateInvoice()" style="display: none;">
+                    </div>
+                    <div class="field-group">
+                        <label>To ABN</label>
+                        <input id="toABN" type="text" placeholder="Customer ABN (11 digits)" maxlength="11" oninput="validateABN(this); updateInvoice()">
+                    </div>
+                    <div class="field-group">
+                        <label>From (Your Business)</label>
+                        <select id="businessSelect" onchange="handleBusinessChange()">
+                            <option value="">🏢 Select saved business</option>
+                            <option value="custom">✏️ New Business (Type Custom)</option>
+                        </select>
+                        <input id="from" type="text" placeholder="Your business name" class="custom-input animated-input" oninput="updateInvoice()" style="display: none;">
+                    </div>
+                    <div class="field-group">
+                        <label>From ABN</label>
+                        <input id="fromABN" type="text" placeholder="Your ABN (11 digits)" maxlength="11" oninput="validateABN(this); updateInvoice()">
+                    </div>
+                </div>
+                <div class="form-grid" style="margin-top: 15px;">
+                    <button class="btn" onclick="saveCustomerDetails()" style="font-size: 0.9rem; padding: 10px 20px;">💾 Save Customer</button>
+                    <button class="btn" onclick="saveBusinessDetails()" style="font-size: 0.9rem; padding: 10px 20px;">💾 Save Business</button>
+                </div>
+            </div>
+
+            <div class="form-section">
+                <h3>Add Line Item</h3>
+                <div class="form-grid">
+                    <div class="field-group">
+                        <label>Date</label>
+                        <input id="itemDate" type="date">
+                    </div>
+                    <div class="field-group">
+                        <label>Hourly Rate ($) <span style="color: #6b7280; font-weight: normal;">(Optional)</span></label>
+                        <input id="hourlyRate" type="number" step="0.01" placeholder="0.00" oninput="calculatePrice()">
+                        <div id="hourlyInfo" class="hourly-info">
+                            💡 Enter hours below to auto-calculate price
+                        </div>
+                    </div>
+                    <div class="field-group">
+                        <label>Hours <span style="color: #6b7280; font-weight: normal;">(If using hourly rate)</span></label>
+                        <input id="hours" type="number" step="0.25" placeholder="0.00" oninput="calculatePrice()">
+                    </div>
+                    <div class="field-group">
+                        <label>Price ($) <span id="priceLabel">Manual Entry</span></label>
+                        <input id="price" type="number" step="0.01" placeholder="0.00" oninput="handlePriceChange()">
+                        <div id="calculationInfo" class="hourly-info">
+                            ✏️ Enter price manually or use hourly rate above
+                        </div>
+                    </div>
+                </div>
+                <div class="form-grid single">
+                    <div class="field-group">
+                        <label>Job Type</label>
+                        <select id="jobTypeSelect" onchange="handleJobTypeChange()">
+                            <option value="Commercial Cleaning">🏢 Commercial Cleaning</option>
+                            <option value="House Cleaning">🏠 House Cleaning</option>
+                            <option value="custom">✏️ Other (Type Custom)</option>
+                        </select>
+                        <input id="jobTypeCustom" type="text" placeholder="Enter custom job type" class="custom-input animated-input" style="display: none;">
+                    </div>
+                    <div class="field-group">
+                        <label>Address</label>
+                        <select id="addressSelect" onchange="handleAddressChange()">
+                            <option value="">📍 Select saved address</option>
+                            <option value="custom">✏️ New Address (Type Custom)</option>
+                        </select>
+                        <input id="addressCustom" type="text" placeholder="Enter address" class="custom-input animated-input" style="display: none;">
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="addItem()">➕ Add Item</button>
+                
+                <div id="itemsList" class="items-list" style="display: none;">
+                    <div style="padding: 12px; font-weight: 600; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+                        Current Items
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="right-panel">
+            <div class="invoice-preview">
+                <div class="preview-header">
+                    📄 Invoice Preview
+                </div>
+                <div id="invoiceOutput"></div>
+            </div>
+            
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="downloadPDF()">📥 Download PDF</button>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 15px; background: #f0f9ff; border-radius: 10px; border-left: 4px solid #0ea5e9;">
+                <div class="status-badge">✅ Ready to Generate</div>
+                <p style="margin: 10px 0 0 0; font-size: 0.9rem; color: #0369a1;">Fill in all details and add at least one item to generate your professional invoice.</p>
+                <div style="margin-top: 10px; font-size: 0.8rem; color: #6b7280;">
+                    📋 Required: Bank details, invoice info, customer/business details, and line items
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+let items = [];
+
+function saveBankDetails() {
+    const bankDetails = {
+        id: Date.now(), // Add unique ID
+        bank: document.getElementById('bank').value.trim(),
+        accName: document.getElementById('accName').value.trim(),
+        bsb: document.getElementById('bsb').value.trim(),
+        accNumber: document.getElementById('accNumber').value.trim(),
+        dateAdded: new Date().toISOString()
+    };
+    
+    // Validate required fields
+    const requiredFields = [
+        { id: 'bank', name: 'Bank Name', value: bankDetails.bank },
+        { id: 'accName', name: 'Account Name', value: bankDetails.accName },
+        { id: 'bsb', name: 'BSB', value: bankDetails.bsb },
+        { id: 'accNumber', name: 'Account Number', value: bankDetails.accNumber }
+    ];
+    
+    const validation = validateRequiredFields(requiredFields);
+    
+    if (validation.errors.length > 0) {
+        highlightErrorFields(validation.errorFieldIds);
+        Swal.fire({
+            icon: 'error',
+            title: 'Missing Information',
+            text: `Please fill in: ${validation.errors.join(', ')}`,
+            confirmButtonColor: '#1F4E79'
+        });
+        return;
+    }
+    
+    // Get existing bank details
+    let savedBankDetails = JSON.parse(localStorage.getItem('savedBankDetails')) || [];
+    
+    // Check for duplicates (same BSB and Account Number)
+    const existingIndex = savedBankDetails.findIndex(bank => 
+        bank.bsb === bankDetails.bsb && bank.accNumber === bankDetails.accNumber
+    );
+    
+    if (existingIndex >= 0) {
+        Swal.fire({
+            icon: 'question',
+            title: 'Bank Details Already Exist',
+            text: 'Bank details with this BSB and Account Number already exist. Do you want to update them?',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, update',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#1F4E79'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                savedBankDetails[existingIndex] = bankDetails;
+                localStorage.setItem('savedBankDetails', JSON.stringify(savedBankDetails));
+                localStorage.setItem('currentBankDetails', JSON.stringify(bankDetails));
+                
+                showBankDetailsSavedSuccess('updated');
+                clearBankDetailsForm();
+                loadSavedBankDetails();
+                updateInvoice();
+            }
+        });
+        return;
+    }
+    
+    // Add new bank details
+    savedBankDetails.push(bankDetails);
+    localStorage.setItem('savedBankDetails', JSON.stringify(savedBankDetails));
+    localStorage.setItem('currentBankDetails', JSON.stringify(bankDetails)); // Set as current
+    
+    showBankDetailsSavedSuccess('saved');
+    clearBankDetailsForm();
+    loadSavedBankDetails();
+    updateInvoice();
+}
+
+function showBankDetailsSavedSuccess(action) {
+    Swal.fire({
+        icon: 'success',
+        title: `Bank Details ${action === 'updated' ? 'Updated' : 'Saved'}!`,
+        text: `Your bank information has been ${action} successfully and set as current.`,
+        timer: 2000,
+        showConfirmButton: false,
+        confirmButtonColor: '#10b981'
+    });
+    
+    // Add success styling to fields
+    ['bank', 'accName', 'bsb', 'accNumber'].forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        element.classList.add('field-success');
+        setTimeout(() => element.classList.remove('field-success'), 600);
+    });
+}
+
+function clearBankDetailsForm() {
+    ['bank', 'accName', 'bsb', 'accNumber'].forEach(fieldId => {
+        document.getElementById(fieldId).value = '';
+    });
+    
+    // Hide form and show cards
+    document.getElementById('bankDetailsForm').style.display = 'none';
+    document.getElementById('bankDetailsSelect').value = '';
+    displaySavedBankCards();
+}
+
+function loadSavedBankDetails() {
+    const savedBankDetails = JSON.parse(localStorage.getItem('savedBankDetails')) || [];
+    const bankDetailsSelect = document.getElementById('bankDetailsSelect');
+    
+    // Clear existing options except the first two
+    bankDetailsSelect.innerHTML = '<option value="">🏦 Select saved bank details</option><option value="new">✏️ Add New Bank Details</option>';
+    
+    // Add saved bank details as options
+    savedBankDetails.forEach((bank, index) => {
+        const option = document.createElement('option');
+        option.value = JSON.stringify(bank);
+        option.textContent = `${bank.bank} - ${bank.accName} (${bank.accNumber})`;
+        bankDetailsSelect.appendChild(option);
+    });
+    
+    // Load current bank details or default to latest
+    loadCurrentBankDetails();
+    displaySavedBankCards();
+}
+
+function loadCurrentBankDetails() {
+    const currentBank = JSON.parse(localStorage.getItem('currentBankDetails'));
+    const savedBankDetails = JSON.parse(localStorage.getItem('savedBankDetails')) || [];
+    
+    let bankToLoad = currentBank;
+    
+    // If no current bank set, use the latest saved one
+    if (!bankToLoad && savedBankDetails.length > 0) {
+        bankToLoad = savedBankDetails[savedBankDetails.length - 1];
+        localStorage.setItem('currentBankDetails', JSON.stringify(bankToLoad));
+    }
+    
+    if (bankToLoad) {
+        // Set the dropdown to the current bank
+        const bankDetailsSelect = document.getElementById('bankDetailsSelect');
+        bankDetailsSelect.value = JSON.stringify(bankToLoad);
+        
+        // Update form fields (but keep form hidden)
+        document.getElementById('bank').value = bankToLoad.bank || '';
+        document.getElementById('accName').value = bankToLoad.accName || '';
+        document.getElementById('bsb').value = bankToLoad.bsb || '';
+        document.getElementById('accNumber').value = bankToLoad.accNumber || '';
+    }
+}
+
+function displaySavedBankCards() {
+    const savedBankDetails = JSON.parse(localStorage.getItem('savedBankDetails')) || [];
+    const currentBank = JSON.parse(localStorage.getItem('currentBankDetails'));
+    const cardsContainer = document.getElementById('savedBankCards');
+    
+    if (savedBankDetails.length === 0) {
+        cardsContainer.style.display = 'none';
+        return;
+    }
+    
+    cardsContainer.style.display = 'block';
+    
+    const cardsHTML = savedBankDetails.map((bank, index) => {
+        const isSelected = currentBank && currentBank.id === bank.id;
+        const addedDate = new Date(bank.dateAdded).toLocaleDateString();
+        
+        return `
+            <div class="bank-card ${isSelected ? 'selected' : ''}" onclick="selectBankDetails(${bank.id})" data-bank-id="${bank.id}">
+                <div class="card-actions">
+                    <button class="card-action-btn delete" onclick="event.stopPropagation(); deleteBankDetails(${bank.id})" title="Delete bank details">🗑️</button>
+                </div>
+                <h4>
+                    🏦 ${bank.bank}
+                    ${isSelected ? '<span class="current-bank-indicator">CURRENT</span>' : ''}
+                </h4>
+                <div class="bank-details">
+                    <div class="bank-detail-item">
+                        <span class="bank-detail-label">Account Name:</span>
+                        <span class="bank-detail-value">${bank.accName}</span>
+                    </div>
+                    <div class="bank-detail-item">
+                        <span class="bank-detail-label">BSB:</span>
+                        <span class="bank-detail-value">${bank.bsb}</span>
+                    </div>
+                    <div class="bank-detail-item">
+                        <span class="bank-detail-label">Account:</span>
+                        <span class="bank-detail-value">${bank.accNumber}</span>
+                    </div>
+                    <div class="bank-detail-item">
+                        <span class="bank-detail-label">Added:</span>
+                        <span class="bank-detail-value">${addedDate}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    cardsContainer.innerHTML = cardsHTML;
+}
+
+function selectBankDetails(bankId) {
+    const savedBankDetails = JSON.parse(localStorage.getItem('savedBankDetails')) || [];
+    const selectedBank = savedBankDetails.find(bank => bank.id === bankId);
+    
+    if (selectedBank) {
+        localStorage.setItem('currentBankDetails', JSON.stringify(selectedBank));
+        
+        // Update form fields
+        document.getElementById('bank').value = selectedBank.bank;
+        document.getElementById('accName').value = selectedBank.accName;
+        document.getElementById('bsb').value = selectedBank.bsb;
+        document.getElementById('accNumber').value = selectedBank.accNumber;
+        
+        // Update dropdown
+        document.getElementById('bankDetailsSelect').value = JSON.stringify(selectedBank);
+        
+        // Refresh cards display
+        displaySavedBankCards();
+        updateInvoice();
+        
+        // Show success toast
+        Swal.fire({
+            icon: 'success',
+            title: 'Bank Details Selected!',
+            text: `${selectedBank.bank} bank details are now active.`,
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+    }
+}
+
+function deleteBankDetails(bankId) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Delete Bank Details?',
+        text: 'Are you sure you want to delete these bank details? This action cannot be undone.',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            let savedBankDetails = JSON.parse(localStorage.getItem('savedBankDetails')) || [];
+            const currentBank = JSON.parse(localStorage.getItem('currentBankDetails'));
+            
+            // Remove the bank details
+            savedBankDetails = savedBankDetails.filter(bank => bank.id !== bankId);
+            localStorage.setItem('savedBankDetails', JSON.stringify(savedBankDetails));
+            
+            // If deleted bank was current, clear current or set to latest
+            if (currentBank && currentBank.id === bankId) {
+                if (savedBankDetails.length > 0) {
+                    localStorage.setItem('currentBankDetails', JSON.stringify(savedBankDetails[savedBankDetails.length - 1]));
+                } else {
+                    localStorage.removeItem('currentBankDetails');
+                }
+            }
+            
+            loadSavedBankDetails();
+            updateInvoice();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Deleted!',
+                text: 'Bank details have been removed.',
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+    });
+}
+
+function handleBankDetailsChange() {
+    const bankDetailsSelect = document.getElementById('bankDetailsSelect');
+    const bankDetailsForm = document.getElementById('bankDetailsForm');
+    const savedBankCards = document.getElementById('savedBankCards');
+    
+    if (bankDetailsSelect.value === 'new') {
+        // Show form for new bank details
+        bankDetailsForm.style.display = 'block';
+        bankDetailsForm.style.animation = 'slideIn 0.3s ease';
+        savedBankCards.style.display = 'none';
+        
+        // Clear form
+        ['bank', 'accName', 'bsb', 'accNumber'].forEach(fieldId => {
+            document.getElementById(fieldId).value = '';
+        });
+        
+        setTimeout(() => document.getElementById('bank').focus(), 100);
+    } else if (bankDetailsSelect.value === '') {
+        // Show saved cards
+        bankDetailsForm.style.display = 'none';
+        displaySavedBankCards();
+    } else {
+        // Selected existing bank details
+        try {
+            const selectedBank = JSON.parse(bankDetailsSelect.value);
+            selectBankDetails(selectedBank.id);
+            bankDetailsForm.style.display = 'none';
+        } catch (e) {
+            console.error('Error parsing bank details:', e);
+        }
+    }
+}
+
+function loadBankDetails() {
+    // Legacy function - now handled by loadSavedBankDetails
+    loadSavedBankDetails();
+}
+
+function saveAddress(address) {
+    if (!address || address.trim() === '') return;
+    
+    let savedAddresses = JSON.parse(localStorage.getItem('savedAddresses')) || [];
+    
+    // Don't save duplicates
+    if (!savedAddresses.includes(address)) {
+        savedAddresses.push(address);
+        localStorage.setItem('savedAddresses', JSON.stringify(savedAddresses));
+        loadSavedAddresses();
+    }
+}
+
+function loadSavedAddresses() {
+    const savedAddresses = JSON.parse(localStorage.getItem('savedAddresses')) || [];
+    const addressSelect = document.getElementById('addressSelect');
+    
+    // Clear existing options except the first two
+    addressSelect.innerHTML = '<option value="">📍 Select saved address</option><option value="custom">✏️ New Address (Type Custom)</option>';
+    
+    // Add saved addresses as options
+    savedAddresses.forEach(address => {
+        const option = document.createElement('option');
+        option.value = address;
+        option.textContent = address;
+        addressSelect.appendChild(option);
+    });
+}
+
+// Customer management functions
+function saveCustomerDetails() {
+    const customerName = document.getElementById('to').value;
+    const customerABN = document.getElementById('toABN').value;
+    
+    // Validate required fields
+    const requiredFields = [
+        { id: 'to', name: 'Customer Name', value: customerName },
+        { id: 'toABN', name: 'Customer ABN', value: customerABN }
+    ];
+    
+    const validation = validateRequiredFields(requiredFields);
+    
+    if (validation.errors.length > 0) {
+        highlightErrorFields(validation.errorFieldIds);
+        Swal.fire({
+            icon: 'error',
+            title: 'Missing Customer Information',
+            text: `Please fill in: ${validation.errors.join(', ')}`,
+            confirmButtonColor: '#1F4E79'
+        });
+        return;
+    }
+    
+    const customer = {
+        name: customerName.trim(),
+        abn: customerABN.trim()
+    };
+    
+    let savedCustomers = JSON.parse(localStorage.getItem('savedCustomers')) || [];
+    
+    // Don't save duplicates (check by name)
+    const existingIndex = savedCustomers.findIndex(c => c.name.toLowerCase() === customer.name.toLowerCase());
+    if (existingIndex >= 0) {
+        savedCustomers[existingIndex] = customer; // Update existing
+    } else {
+        savedCustomers.push(customer); // Add new
+    }
+    
+    localStorage.setItem('savedCustomers', JSON.stringify(savedCustomers));
+    loadSavedCustomers();
+    
+    Swal.fire({
+        icon: 'success',
+        title: 'Customer Saved!',
+        text: `${customer.name} has been saved successfully.`,
+        timer: 2000,
+        showConfirmButton: false
+    });
+    
+    // Add success styling to fields
+    requiredFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        element.classList.add('field-success');
+        setTimeout(() => element.classList.remove('field-success'), 600);
+    });
+}
+
+function saveBusinessDetails() {
+    const businessName = document.getElementById('from').value;
+    const businessABN = document.getElementById('fromABN').value;
+    
+    // Validate required fields
+    const requiredFields = [
+        { id: 'from', name: 'Business Name', value: businessName },
+        { id: 'fromABN', name: 'Business ABN', value: businessABN }
+    ];
+    
+    const validation = validateRequiredFields(requiredFields);
+    
+    if (validation.errors.length > 0) {
+        highlightErrorFields(validation.errorFieldIds);
+        Swal.fire({
+            icon: 'error',
+            title: 'Missing Business Information',
+            text: `Please fill in: ${validation.errors.join(', ')}`,
+            confirmButtonColor: '#1F4E79'
+        });
+        return;
+    }
+    
+    const business = {
+        name: businessName.trim(),
+        abn: businessABN.trim()
+    };
+    
+    let savedBusinesses = JSON.parse(localStorage.getItem('savedBusinesses')) || [];
+    
+    // Don't save duplicates (check by name)
+    const existingIndex = savedBusinesses.findIndex(b => b.name.toLowerCase() === business.name.toLowerCase());
+    if (existingIndex >= 0) {
+        savedBusinesses[existingIndex] = business; // Update existing
+    } else {
+        savedBusinesses.push(business); // Add new
+    }
+    
+    localStorage.setItem('savedBusinesses', JSON.stringify(savedBusinesses));
+    loadSavedBusinesses();
+    
+    Swal.fire({
+        icon: 'success',
+        title: 'Business Saved!',
+        text: `${business.name} has been saved successfully.`,
+        timer: 2000,
+        showConfirmButton: false
+    });
+    
+    // Add success styling to fields
+    requiredFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        element.classList.add('field-success');
+        setTimeout(() => element.classList.remove('field-success'), 600);
+    });
+}
+
+function loadSavedCustomers() {
+    const savedCustomers = JSON.parse(localStorage.getItem('savedCustomers')) || [];
+    const customerSelect = document.getElementById('customerSelect');
+    
+    // Clear existing options except the first two
+    customerSelect.innerHTML = '<option value="">👤 Select saved customer</option><option value="custom">✏️ New Customer (Type Custom)</option>';
+    
+    // Add saved customers as options
+    savedCustomers.forEach(customer => {
+        const option = document.createElement('option');
+        option.value = JSON.stringify(customer);
+        option.textContent = `${customer.name} (ABN: ${customer.abn})`;
+        customerSelect.appendChild(option);
+    });
+}
+
+function loadSavedBusinesses() {
+    const savedBusinesses = JSON.parse(localStorage.getItem('savedBusinesses')) || [];
+    const businessSelect = document.getElementById('businessSelect');
+    
+    // Clear existing options except the first two
+    businessSelect.innerHTML = '<option value="">🏢 Select saved business</option><option value="custom">✏️ New Business (Type Custom)</option>';
+    
+    // Add saved businesses as options
+    savedBusinesses.forEach(business => {
+        const option = document.createElement('option');
+        option.value = JSON.stringify(business);
+        option.textContent = `${business.name} (ABN: ${business.abn})`;
+        businessSelect.appendChild(option);
+    });
+}
+
+function handleCustomerChange() {
+    const customerSelect = document.getElementById('customerSelect');
+    const toInput = document.getElementById('to');
+    const toABNInput = document.getElementById('toABN');
+    
+    if (customerSelect.value === 'custom') {
+        toInput.style.display = 'block';
+        toInput.classList.add('animated-input');
+        toInput.value = '';
+        toABNInput.value = '';
+        setTimeout(() => toInput.focus(), 100);
+    } else if (customerSelect.value === '') {
+        toInput.style.display = 'none';
+        toInput.value = '';
+        toABNInput.value = '';
+        toInput.classList.remove('animated-input');
+    } else {
+        // Selected existing customer
+        try {
+            const customer = JSON.parse(customerSelect.value);
+            toInput.style.display = 'none';
+            toInput.value = customer.name;
+            toABNInput.value = customer.abn;
+            toInput.classList.remove('animated-input');
+            updateInvoice();
+        } catch (e) {
+            console.error('Error parsing customer data:', e);
+        }
+    }
+}
+
+function handleBusinessChange() {
+    const businessSelect = document.getElementById('businessSelect');
+    const fromInput = document.getElementById('from');
+    const fromABNInput = document.getElementById('fromABN');
+    
+    if (businessSelect.value === 'custom') {
+        fromInput.style.display = 'block';
+        fromInput.classList.add('animated-input');
+        fromInput.value = '';
+        fromABNInput.value = '';
+        setTimeout(() => fromInput.focus(), 100);
+    } else if (businessSelect.value === '') {
+        fromInput.style.display = 'none';
+        fromInput.value = '';
+        fromABNInput.value = '';
+        fromInput.classList.remove('animated-input');
+    } else {
+        // Selected existing business
+        try {
+            const business = JSON.parse(businessSelect.value);
+            fromInput.style.display = 'none';
+            fromInput.value = business.name;
+            fromABNInput.value = business.abn;
+            fromInput.classList.remove('animated-input');
+            updateInvoice();
+        } catch (e) {
+            console.error('Error parsing business data:', e);
+        }
+    }
+}
+
+// Modern field validation helper functions
+function highlightErrorFields(fieldIds) {
+    // Clear previous error states
+    clearFieldErrors();
+    
+    fieldIds.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (!field) {
+            console.warn('Field not found:', fieldId);
+            return;
+        }
+        
+        const fieldGroup = field.closest('.field-group');
+        
+        if (field && fieldGroup) {
+            field.classList.add('field-error');
+            fieldGroup.classList.add('error');
+            
+            // Auto-clear error state when user starts typing
+            const clearError = () => {
+                field.classList.remove('field-error');
+                fieldGroup.classList.remove('error');
+                field.removeEventListener('input', clearError);
+                field.removeEventListener('change', clearError);
+            };
+            
+            field.addEventListener('input', clearError);
+            field.addEventListener('change', clearError);
+        }
+    });
+}
+
+// Number validation functions
+function validateABN(input) {
+    // Remove any non-digit characters
+    let value = input.value.replace(/\D/g, '');
+    
+    // Limit to 11 digits
+    if (value.length > 11) {
+        value = value.substring(0, 11);
+    }
+    
+    // Update the input value
+    input.value = value;
+    
+    // Visual feedback
+    if (value.length === 11) {
+        input.classList.remove('field-error');
+        input.classList.add('field-success');
+        setTimeout(() => input.classList.remove('field-success'), 2000);
+    } else if (value.length > 0) {
+        input.classList.add('field-error');
+        input.classList.remove('field-success');
+    } else {
+        input.classList.remove('field-error', 'field-success');
+    }
+}
+
+function validateBSB(input) {
+    // Remove any non-digit characters
+    let value = input.value.replace(/\D/g, '');
+    
+    // Limit to 6 digits
+    if (value.length > 6) {
+        value = value.substring(0, 6);
+    }
+    
+    // Update the input value
+    input.value = value;
+    
+    // Visual feedback
+    if (value.length === 6) {
+        input.classList.remove('field-error');
+        input.classList.add('field-success');
+        setTimeout(() => input.classList.remove('field-success'), 2000);
+    } else if (value.length > 0) {
+        input.classList.add('field-error');
+        input.classList.remove('field-success');
+    } else {
+        input.classList.remove('field-error', 'field-success');
+    }
+}
+
+function validateAccountNumber(input) {
+    // Remove any non-digit characters
+    let value = input.value.replace(/\D/g, '');
+    
+    // Limit to 6 digits
+    if (value.length > 6) {
+        value = value.substring(0, 6);
+    }
+    
+    // Update the input value
+    input.value = value;
+    
+    // Visual feedback
+    if (value.length === 6) {
+        input.classList.remove('field-error');
+        input.classList.add('field-success');
+        setTimeout(() => input.classList.remove('field-success'), 2000);
+    } else if (value.length > 0) {
+        input.classList.add('field-error');
+        input.classList.remove('field-success');
+    } else {
+        input.classList.remove('field-error', 'field-success');
+    }
+}
+
+function clearFieldErrors() {
+    document.querySelectorAll('.field-error').forEach(field => {
+        field.classList.remove('field-error');
+    });
+    
+    document.querySelectorAll('.field-group.error').forEach(group => {
+        group.classList.remove('error');
+    });
+}
+
+function validateRequiredFields(fields) {
+    const errors = [];
+    const errorFieldIds = [];
+    
+    fields.forEach(field => {
+        // For price field, check if value exists and is valid
+        if (field.id === 'price') {
+            if (!field.value || field.value.trim() === '' || parseFloat(field.value) <= 0) {
+                errors.push(field.name);
+                errorFieldIds.push(field.id);
+            }
+        }
+        // For ABN fields, check if exactly 11 digits
+        else if (field.id === 'toABN' || field.id === 'fromABN') {
+            if (!field.value || field.value.toString().trim() === '') {
+                errors.push(field.name);
+                errorFieldIds.push(field.id);
+            } else if (!/^\d{11}$/.test(field.value.toString().trim())) {
+                errors.push(field.name + ' (must be exactly 11 digits)');
+                errorFieldIds.push(field.id);
+            }
+        }
+        // For BSB field, check if exactly 6 digits
+        else if (field.id === 'bsb') {
+            if (!field.value || field.value.toString().trim() === '') {
+                errors.push(field.name);
+                errorFieldIds.push(field.id);
+            } else if (!/^\d{6}$/.test(field.value.toString().trim())) {
+                errors.push(field.name + ' (must be exactly 6 digits)');
+                errorFieldIds.push(field.id);
+            }
+        }
+        // For account number, check if exactly 6 digits
+        else if (field.id === 'accNumber') {
+            if (!field.value || field.value.toString().trim() === '') {
+                errors.push(field.name);
+                errorFieldIds.push(field.id);
+            } else if (!/^\d{6}$/.test(field.value.toString().trim())) {
+                errors.push(field.name + ' (must be exactly 6 digits)');
+                errorFieldIds.push(field.id);
+            }
+        }
+        else {
+            // For other fields, check if value exists and is not empty
+            if (!field.value || field.value.toString().trim() === '') {
+                errors.push(field.name);
+                errorFieldIds.push(field.id);
+            }
+        }
+    });
+    
+    return { errors, errorFieldIds };
+}
+
+// Complete invoice validation function
+function validateInvoiceCompletion() {
+    const errors = [];
+    const errorFieldIds = [];
+    
+    // Check bank details
+    const bankFields = [
+        { id: 'bank', name: 'Bank Name', value: document.getElementById('bank').value },
+        { id: 'accName', name: 'Account Name', value: document.getElementById('accName').value },
+        { id: 'bsb', name: 'BSB', value: document.getElementById('bsb').value },
+        { id: 'accNumber', name: 'Account Number', value: document.getElementById('accNumber').value }
+    ];
+    
+    // Check invoice details
+    const invoiceFields = [
+        { id: 'invoiceDate', name: 'Invoice Date', value: document.getElementById('invoiceDate').value },
+        { id: 'invoiceNumber', name: 'Invoice Number', value: document.getElementById('invoiceNumber').value },
+        { id: 'to', name: 'Customer Name', value: document.getElementById('to').value },
+        { id: 'toABN', name: 'Customer ABN', value: document.getElementById('toABN').value },
+        { id: 'from', name: 'Business Name', value: document.getElementById('from').value },
+        { id: 'fromABN', name: 'Business ABN', value: document.getElementById('fromABN').value }
+    ];
+    
+    // Validate all required fields
+    const bankValidation = validateRequiredFields(bankFields);
+    const invoiceValidation = validateRequiredFields(invoiceFields);
+    
+    errors.push(...bankValidation.errors);
+    errors.push(...invoiceValidation.errors);
+    errorFieldIds.push(...bankValidation.errorFieldIds);
+    errorFieldIds.push(...invoiceValidation.errorFieldIds);
+    
+    // Check if at least one item exists
+    if (items.length === 0) {
+        errors.push('At least one line item (add items using the form above)');
+        // Highlight the add item button area
+        const addItemButton = document.querySelector('button[onclick="addItem()"]');
+        if (addItemButton) {
+            addItemButton.classList.add('field-error');
+            setTimeout(() => addItemButton.classList.remove('field-error'), 3000);
+        }
+    }
+    
+    return {
+        isValid: errors.length === 0,
+        errors,
+        errorFieldIds
+    };
+}
+
+// Invoice history management functions
+function saveInvoiceToHistory(invoiceNumber, invoiceDate) {
+    if (!invoiceNumber || !invoiceDate) return;
+    
+    let invoiceHistory = JSON.parse(localStorage.getItem('invoiceHistory')) || [];
+    
+    const newInvoice = {
+        number: invoiceNumber.trim(),
+        date: invoiceDate,
+        generated: new Date().toISOString()
+    };
+    
+    // Check if this invoice already exists (prevent duplicates)
+    const existingIndex = invoiceHistory.findIndex(inv => inv.number === newInvoice.number);
+    if (existingIndex >= 0) {
+        invoiceHistory[existingIndex] = newInvoice; // Update existing
+    } else {
+        invoiceHistory.push(newInvoice); // Add new
+    }
+    
+    // Keep only the last 2 invoices
+    invoiceHistory = invoiceHistory.slice(-2);
+    
+    localStorage.setItem('invoiceHistory', JSON.stringify(invoiceHistory));
+    updateInvoiceNumberHelper();
+}
+
+function loadInvoiceHistory() {
+    const invoiceHistory = JSON.parse(localStorage.getItem('invoiceHistory')) || [];
+    return invoiceHistory.sort((a, b) => new Date(b.generated) - new Date(a.generated)); // Most recent first
+}
+
+function updateInvoiceNumberHelper() {
+    const invoiceHistory = loadInvoiceHistory();
+    const invoiceNumberInput = document.getElementById('invoiceNumber');
+    
+    if (invoiceHistory.length > 0) {
+        // Create helper text showing recent invoices
+        let helperText = '';
+        if (invoiceHistory.length >= 1) {
+            helperText += `Latest: ${invoiceHistory[0].number} (${new Date(invoiceHistory[0].date).toLocaleDateString()})`;
+        }
+        if (invoiceHistory.length >= 2) {
+            helperText += ` | Previous: ${invoiceHistory[1].number} (${new Date(invoiceHistory[1].date).toLocaleDateString()})`;
+        }
+        
+        // Auto-suggest next invoice number if current is empty
+        if (!invoiceNumberInput.value.trim()) {
+            const suggestedNumber = generateNextInvoiceNumber(invoiceHistory[0].number);
+            if (suggestedNumber) {
+                invoiceNumberInput.placeholder = `Suggested: ${suggestedNumber}`;
+            }
+        }
+        
+        // Find or create helper element
+        let helperElement = invoiceNumberInput.parentNode.querySelector('.invoice-helper');
+        if (!helperElement) {
+            helperElement = document.createElement('div');
+            helperElement.className = 'invoice-helper';
+            helperElement.style.cssText = `
+                font-size: 0.8rem; 
+                color: #6b7280; 
+                margin-top: 5px; 
+                padding: 8px 12px; 
+                background: #f8fafc; 
+                border-radius: 6px; 
+                border-left: 3px solid #3b82f6;
+                animation: fadeIn 0.3s ease;
+            `;
+            invoiceNumberInput.parentNode.appendChild(helperElement);
+        }
+        
+        helperElement.innerHTML = `📋 Recent: ${helperText}`;
+    }
+}
+
+function generateNextInvoiceNumber(lastInvoiceNumber) {
+    if (!lastInvoiceNumber) return null;
+    
+    // Try to extract number from various formats
+    const patterns = [
+        /^INV[-_]?(\d+)$/i,  // INV-001, INV_001, INV001
+        /^(\d+)$/,            // 001, 123
+        /^([A-Z]+)[-_]?(\d+)$/i  // ABC-001, XYZ_123
+    ];
+    
+    for (const pattern of patterns) {
+        const match = lastInvoiceNumber.match(pattern);
+        if (match) {
+            if (pattern.source.includes('([A-Z]+)')) {
+                // Format with prefix
+                const prefix = match[1];
+                const number = parseInt(match[2]);
+                const nextNumber = (number + 1).toString().padStart(match[2].length, '0');
+                return `${prefix}-${nextNumber}`;
+            } else {
+                // Simple number format
+                const number = parseInt(match[1]);
+                if (lastInvoiceNumber.startsWith('INV')) {
+                    const nextNumber = (number + 1).toString().padStart(match[1].length, '0');
+                    return `INV-${nextNumber}`;
+                } else {
+                    const nextNumber = (number + 1).toString().padStart(match[1].length, '0');
+                    return nextNumber;
+                }
+            }
+        }
+    }
+    
+    return null; // Could not determine pattern
+}
+
+function handleJobTypeChange() {
+    const jobTypeSelect = document.getElementById('jobTypeSelect');
+    const jobTypeCustom = document.getElementById('jobTypeCustom');
+    
+    if (jobTypeSelect.value === 'custom') {
+        jobTypeCustom.style.display = 'block';
+        jobTypeCustom.classList.add('animated-input');
+        setTimeout(() => jobTypeCustom.focus(), 100);
+    } else {
+        jobTypeCustom.style.display = 'none';
+        jobTypeCustom.value = '';
+        jobTypeCustom.classList.remove('animated-input');
+    }
+}
+
+function handleAddressChange() {
+    const addressSelect = document.getElementById('addressSelect');
+    const addressCustom = document.getElementById('addressCustom');
+    
+    if (addressSelect.value === 'custom') {
+        addressCustom.style.display = 'block';
+        addressCustom.classList.add('animated-input');
+        setTimeout(() => addressCustom.focus(), 100);
+        addressCustom.value = '';
+    } else if (addressSelect.value === '') {
+        addressCustom.style.display = 'none';
+        addressCustom.value = '';
+        addressCustom.classList.remove('animated-input');
+    } else {
+        addressCustom.style.display = 'none';
+        addressCustom.value = addressSelect.value;
+        addressCustom.classList.remove('animated-input');
+    }
+}
+
+function calculatePrice() {
+    const hourlyRate = parseFloat(document.getElementById('hourlyRate').value) || 0;
+    const hours = parseFloat(document.getElementById('hours').value) || 0;
+    const priceInput = document.getElementById('price');
+    const hourlyInfo = document.getElementById('hourlyInfo');
+    const calculationInfo = document.getElementById('calculationInfo');
+    const priceLabel = document.getElementById('priceLabel');
+    
+    if (hourlyRate > 0 && hours > 0) {
+        const calculatedPrice = hourlyRate * hours;
+        priceInput.value = calculatedPrice.toFixed(2);
+        priceInput.classList.add('price-calculated');
+        
+        // Update labels and info
+        priceLabel.innerHTML = '<span class="calculation-badge">Auto-calculated</span>';
+        hourlyInfo.innerHTML = `💰 $${hourlyRate.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr × ${hours} hrs = $${calculatedPrice.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        hourlyInfo.classList.add('show');
+        calculationInfo.innerHTML = '🔄 Price calculated from hourly rate';
+        calculationInfo.classList.add('show');
+        
+        // Remove animation class after animation completes
+        setTimeout(() => {
+            priceInput.classList.remove('price-calculated');
+        }, 500);
+    } else if (hourlyRate > 0 || hours > 0) {
+        // Show helpful information
+        if (hourlyRate > 0) {
+            hourlyInfo.innerHTML = `💡 Enter hours to calculate: $${hourlyRate.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr × ? hrs`;
+            hourlyInfo.classList.add('show');
+        } else {
+            hourlyInfo.innerHTML = `💡 Enter hourly rate to calculate: $?/hr × ${hours} hrs`;
+            hourlyInfo.classList.add('show');
+        }
+        calculationInfo.innerHTML = '✏️ Complete hourly rate fields or enter price manually';
+        calculationInfo.classList.add('show');
+        priceLabel.innerHTML = 'Manual Entry';
+    } else {
+        // Reset to manual mode
+        hourlyInfo.classList.remove('show');
+        calculationInfo.innerHTML = '✏️ Enter price manually or use hourly rate above';
+        calculationInfo.classList.add('show');
+        priceLabel.innerHTML = 'Manual Entry';
+    }
+}
+
+function handlePriceChange() {
+    const priceInput = document.getElementById('price');
+    const priceLabel = document.getElementById('priceLabel');
+    const calculationInfo = document.getElementById('calculationInfo');
+    
+    if (priceInput.value) {
+        priceLabel.innerHTML = 'Manual Entry';
+        calculationInfo.innerHTML = '✅ Price entered manually';
+        calculationInfo.classList.add('show');
+        
+        // Clear hourly rate fields if user manually enters price
+        const hourlyRate = document.getElementById('hourlyRate');
+        const hours = document.getElementById('hours');
+        if (hourlyRate.value || hours.value) {
+            setTimeout(() => {
+                Swal.fire({
+                    icon: 'question',
+                    title: 'Clear Hourly Rate Fields?',
+                    text: 'You entered a price manually. Would you like to clear the hourly rate fields?',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, clear them',
+                    cancelButtonText: 'Keep both',
+                    confirmButtonColor: '#1F4E79',
+                    cancelButtonColor: '#6b7280'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        hourlyRate.value = '';
+                        hours.value = '';
+                        document.getElementById('hourlyInfo').classList.remove('show');
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Cleared!',
+                            text: 'Hourly rate fields have been cleared.',
+                            timer: 1500,
+                            showConfirmButton: false,
+                            toast: true,
+                            position: 'top-end'
+                        });
+                    }
+                });
+            }, 500);
+        }
+    }
+}
+
+function addItem() {
+    console.log('Add Item function called'); // Debug log
+    
+    const date = document.getElementById('itemDate').value;
+    const jobTypeSelect = document.getElementById('jobTypeSelect');
+    const jobTypeCustom = document.getElementById('jobTypeCustom');
+    const addressSelect = document.getElementById('addressSelect');
+    const addressCustom = document.getElementById('addressCustom');
+    const hourlyRate = parseFloat(document.getElementById('hourlyRate').value) || 0;
+    const hours = parseFloat(document.getElementById('hours').value) || 0;
+    const priceValue = document.getElementById('price').value;
+    const price = parseFloat(priceValue) || 0;
+    
+    console.log('Form values:', { date, price: priceValue, jobType: jobTypeSelect.value }); // Debug log
+    
+    // Get job type (either from dropdown or custom input)
+    let jobType;
+    if (jobTypeSelect.value === 'custom') {
+        jobType = jobTypeCustom.value.trim();
+    } else {
+        jobType = jobTypeSelect.value;
+    }
+    
+    // Get address (either from dropdown or custom input)
+    let address;
+    if (addressSelect.value === 'custom') {
+        address = addressCustom.value.trim();
+    } else if (addressSelect.value === '') {
+        address = addressCustom.value.trim();
+    } else {
+        address = addressSelect.value;
+    }
+    
+    // Modern validation with detailed error reporting
+    const requiredFields = [
+        { id: 'itemDate', value: date, name: 'Date' }
+    ];
+    
+    // Price validation - must be greater than 0
+    if (!priceValue || price <= 0) {
+        requiredFields.push({ id: 'price', value: priceValue, name: 'Price (must be greater than 0)' });
+    }
+    
+    // Job type validation
+    if (jobTypeSelect.value === 'custom') {
+        if (!jobType) {
+            requiredFields.push({ id: 'jobTypeCustom', value: jobType, name: 'Custom Job Type' });
+        }
+    } else if (!jobType) {
+        requiredFields.push({ id: 'jobTypeSelect', value: jobType, name: 'Job Type' });
+    }
+    
+    // Address validation
+    if (addressSelect.value === 'custom') {
+        if (!address) {
+            requiredFields.push({ id: 'addressCustom', value: address, name: 'Custom Address' });
+        }
+    } else if (addressSelect.value === '') {
+        if (!address) {
+            requiredFields.push({ id: 'addressCustom', value: address, name: 'Address' });
+        }
+    }
+    
+    const validation = validateRequiredFields(requiredFields);
+    
+    console.log('Validation result:', validation); // Debug log
+    
+    if (validation.errors.length > 0) {
+        console.log('Validation failed, showing error'); // Debug log
+        highlightErrorFields(validation.errorFieldIds);
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Missing Required Fields',
+            html: `
+                <div style="text-align: left; margin: 20px 0;">
+                    <p style="margin-bottom: 15px; color: #374151;">Please fill in the following required fields:</p>
+                    <ul style="color: #ef4444; font-weight: 600;">
+                        ${validation.errors.map(error => `<li>• ${error}</li>`).join('')}
+                    </ul>
+                </div>
+            `,
+            confirmButtonText: 'Got it!',
+            confirmButtonColor: '#ef4444'
+        });
+        return;
+    }
+    
+    // Save the address for future use (only if it's a new address)
+    if (addressSelect.value === 'custom' || addressSelect.value === '') {
+        saveAddress(address);
+    }
+    
+    // Create item object with hourly rate info if applicable
+    const item = { 
+        id: Date.now(),
+        date, 
+        jobType, 
+        address, 
+        price,
+        hourlyRate: hourlyRate || null,
+        hours: hours || null,
+        isCalculated: hourlyRate > 0 && hours > 0
+    };
+    
+    items.push(item);
+    console.log('Item added successfully:', item); // Debug log
+    console.log('Total items now:', items.length); // Debug log
+
+    // Clear the form with animation
+    clearFormWithAnimation();
+    
+    // Update displays
+    updateItemsList();
+    updateInvoice();
+    
+    // Show success animation with SweetAlert2
+    showSuccessMessage();
+}
+
+function clearFormWithAnimation() {
+    const formFields = [
+        'itemDate', 'hourlyRate', 'hours', 'price', 
+        'jobTypeCustom', 'addressCustom'
+    ];
+    
+    formFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.style.transform = 'scale(0.95)';
+            field.style.opacity = '0.5';
+            setTimeout(() => {
+                field.value = '';
+                field.style.transform = '';
+                field.style.opacity = '';
+            }, 150);
+        }
+    });
+    
+    // Reset dropdowns and visibility
+    setTimeout(() => {
+        document.getElementById('jobTypeSelect').value = 'Commercial Cleaning';
+        document.getElementById('jobTypeCustom').style.display = 'none';
+        document.getElementById('addressSelect').value = '';
+        document.getElementById('addressCustom').style.display = 'none';
+        
+        // Reset price calculation display
+        document.getElementById('hourlyInfo').classList.remove('show');
+        document.getElementById('calculationInfo').innerHTML = '✏️ Enter price manually or use hourly rate above';
+        document.getElementById('priceLabel').innerHTML = 'Manual Entry';
+    }, 150);
+}
+
+function showSuccessMessage() {
+    const button = document.querySelector('.btn-primary');
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '✅ Item Added!';
+    button.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    button.style.transform = 'scale(1.05)';
+    
+    // Show SweetAlert2 success toast
+    Swal.fire({
+        icon: 'success',
+        title: 'Item Added Successfully!',
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true
+    });
+    
+    setTimeout(() => {
+        button.innerHTML = originalText;
+        button.style.background = '';
+        button.style.transform = '';
+    }, 1000);
+}
+
+function removeItem(id) {
+    Swal.fire({
+        icon: 'warning',
+        title: 'Remove Item?',
+        text: 'Are you sure you want to remove this item from the invoice?',
+        showCancelButton: true,
+        confirmButtonText: 'Yes, remove it',
+        cancelButtonText: 'Cancel',
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const itemElement = [...document.querySelectorAll('.item-row')].find(row => 
+                row.querySelector('.delete-btn').getAttribute('onclick').includes(id)
+            );
+            
+            if (itemElement) {
+                itemElement.style.animation = 'slideOut 0.3s ease forwards';
+                setTimeout(() => {
+                    items = items.filter(item => item.id !== id);
+                    updateItemsList();
+                    updateInvoice();
+                }, 300);
+            }
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Removed!',
+                text: 'The item has been removed from your invoice.',
+                timer: 2000,
+                showConfirmButton: false,
+                toast: true,
+                position: 'top-end'
+            });
+        }
+    });
+}
+
+function updateItemsList() {
+    const itemsList = document.getElementById('itemsList');
+    
+    if (items.length === 0) {
+        itemsList.style.display = 'none';
+        return;
+    }
+    
+    itemsList.style.display = 'block';
+    itemsList.style.animation = 'fadeIn 0.3s ease';
+    
+    const itemsHTML = items.map((item, index) => {
+        let priceDisplay = `<strong>$${item.price.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>`;
+        let hourlyInfo = '';
+        
+        if (item.isCalculated && item.hourlyRate && item.hours) {
+            hourlyInfo = `<div style="font-size: 0.75rem; color: #6b7280; margin-top: 2px;">$${item.hourlyRate.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/hr × ${item.hours}h</div>`;
+        }
+        
+        return `
+            <div class="item-row" style="animation: slideIn 0.3s ease ${index * 0.1}s both;">
+                <div><strong>${item.date}</strong></div>
+                <div>
+                    ${item.jobType} - ${item.address}
+                    ${hourlyInfo}
+                </div>
+                <div>
+                    ${priceDisplay}
+                    ${item.isCalculated ? '<div style="font-size: 0.7rem; color: #10b981;">📊 Calculated</div>' : ''}
+                </div>
+                <button class="delete-btn" onclick="removeItem(${item.id})" title="Remove item">🗑️</button>
+            </div>
+        `;
+    }).join('');
+    
+    itemsList.innerHTML = `
+        <div style="padding: 12px; font-weight: 600; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">
+            Current Items (${items.length}) - Total: $${items.reduce((sum, item) => sum + item.price, 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+        </div>
+        ${itemsHTML}
+    `;
+}
+
+function updateInvoice() {
+    // Get current bank details instead of legacy bankDetails
+    const currentBank = JSON.parse(localStorage.getItem('currentBankDetails'));
+    const bank = currentBank || {}; // Fallback to empty object if no bank details
+    
+    const invoiceDate = document.getElementById('invoiceDate').value;
+    const invoiceNumber = document.getElementById('invoiceNumber').value;
+    const to = document.getElementById('to').value;
+    const toABN = document.getElementById('toABN').value;
+    const from = document.getElementById('from').value;
+    const fromABN = document.getElementById('fromABN').value;
+
+    let total = items.reduce((sum, item) => sum + item.price, 0);
+
+    let html = `
+    <div style="max-width: 100%; width: 100%; margin: 0 auto; font-family: 'Segoe UI', Arial, sans-serif; color: #000; background: white; padding: 20px; box-sizing: border-box; page-break-after: auto;">
+        <!-- Header Section -->
+        <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #1F4E79; padding-bottom: 15px;">
+            <h2 style="margin: 0; font-size: 28px; color: #1F4E79; font-weight: bold; letter-spacing: 1px;">TAX INVOICE</h2>
+            <div style="margin-top: 8px; font-size: 14px; color: #666;">Professional Invoice Document</div>
+        </div>
+        
+        <!-- Invoice Info and Parties Section -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; gap: 20px;">
+            <!-- Left Column: Invoice Details -->
+            <div style="width: 48%;">
+                <div style="background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #1F4E79;">
+                    <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1F4E79; font-weight: 600;">Invoice Details</h3>
+                    <div style="margin-bottom: 8px; font-size: 13px;">
+                        <span style="font-weight: 600; color: #374151; display: inline-block; width: 80px;">Date:</span>
+                        <span style="color: #000;">${invoiceDate || 'Not specified'}</span>
+                    </div>
+                    <div style="font-size: 13px;">
+                        <span style="font-weight: 600; color: #374151; display: inline-block; width: 80px;">Number:</span>
+                        <span style="color: #000; font-weight: 600;">${invoiceNumber || 'Not specified'}</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column: Payment Terms -->
+            <div style="width: 48%;">
+                <div style="background: #f0f9ff; padding: 15px; border-radius: 6px; border-left: 4px solid #0ea5e9;">
+                    <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #0ea5e9; font-weight: 600;">Payment Summary</h3>
+                    <div style="margin-bottom: 8px; font-size: 13px;">
+                    </div>
+                    <div style="font-size: 13px;">
+                        <span style="font-weight: 600; color: #374151; display: inline-block; width: 60px;">Total:</span>
+                        <span style="color: #000; font-weight: bold; font-size: 18px;">$${total.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- From and To Section -->
+        <div style="display: flex; justify-content: space-between; margin-bottom: 20px; gap: 20px;">
+            <!-- From Section -->
+            <div style="width: 48%;">
+                <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #1F4E79; font-weight: 600; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">FROM (Service Provider)</h3>
+                <div style="background: white; padding: 12px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                    <div style="font-weight: 600; font-size: 14px; color: #000; margin-bottom: 6px;">${from || 'Business name not specified'}</div>
+                    <div style="color: #666; font-size: 12px;">
+                        <span style="font-weight: 600;">ABN:</span> ${fromABN || 'Not specified'}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- To Section -->
+            <div style="width: 48%;">
+                <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #1F4E79; font-weight: 600; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">TO (Customer)</h3>
+                <div style="background: white; padding: 12px; border: 1px solid #e2e8f0; border-radius: 4px;">
+                    <div style="font-weight: 600; font-size: 14px; color: #000; margin-bottom: 6px;">${to || 'Customer name not specified'}</div>
+                    <div style="color: #666; font-size: 12px;">
+                        <span style="font-weight: 600;">ABN:</span> ${toABN || 'Not specified'}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Line Items Table -->
+        <div style="margin-bottom: 20px; page-break-inside: avoid;">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #1F4E79; font-weight: 600;">Service Details</h3>
+            <table style="width: 100%; border-collapse: collapse; font-size: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
+                <thead>
+                    <tr style="background: #1F4E79; color: white;">
+                        <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2); width: 18%;">Date</th>
+                        <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2); width: 28%;">Service Type</th>
+                        <th style="padding: 12px 8px; text-align: center; font-weight: 600; border-right: 1px solid rgba(255,255,255,0.2); width: 39%;">Location</th>
+                        <th style="padding: 12px 8px; text-align: center; font-weight: 600; width: 15%;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${items.map((item, index) => `
+                    <tr style="border-bottom: 1px solid #f1f5f9; ${index % 2 === 0 ? 'background: #f8fafc;' : 'background: white;'} page-break-inside: avoid;">
+                        <td style="padding: 10px 8px; border-right: 1px solid #f1f5f9; color: #374151; font-size: 11px;">${item.date || 'N/A'}</td>
+                        <td style="padding: 10px 8px; border-right: 1px solid #f1f5f9; color: #374151; font-weight: 500; font-size: 11px;">${item.jobType || 'N/A'}</td>
+                        <td style="padding: 10px 8px; border-right: 1px solid #f1f5f9; color: #374151; font-size: 11px;">${item.address || 'N/A'}</td>
+                        <td style="padding: 10px 8px; text-align: right; color: #374151; font-weight: 600; font-size: 11px;">$${item.price.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                    `).join('')}
+                    ${items.length === 0 ? `
+                    <tr>
+                        <td colspan="4" style="padding: 30px; text-align: center; color: #9ca3af; font-style: italic;">No items added yet</td>
+                    </tr>
+                    ` : ''}
+                </tbody>
+                <tfoot>
+                    <tr style="background: #f1f5f9; border-top: 2px solid #1F4E79;">
+                        <td colspan="3" style="padding: 12px 8px; font-weight: 700; font-size: 14px; color: #1F4E79;">TOTAL AMOUNT</td>
+                        <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; color: #1F4E79;">$${total.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        
+        <!-- Payment Information -->
+        <div style="background: #f0f9ff; padding: 18px; border-radius: 6px; border: 1px solid #bae6fd; margin-bottom: 18px;">
+            <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #0369a1; font-weight: 600;">Payment Information</h3>
+            <div style="display: flex; justify-content: space-between; gap: 15px;">
+                <div style="width: 48%;">
+                    <div style="margin-bottom: 8px; font-size: 12px;">
+                        <span style="font-weight: 600; color: #374151; display: inline-block; width: 100px;">Bank:</span>
+                        <span style="color: #000;">${bank.bank || 'Not specified'}</span>
+                    </div>
+                    <div style="margin-bottom: 8px; font-size: 12px;">
+                        <span style="font-weight: 600; color: #374151; display: inline-block; width: 100px;">Account Name:</span>
+                        <span style="color: #000;">${bank.accName || 'Not specified'}</span>
+                    </div>
+                </div>
+                <div style="width: 48%;">
+                    <div style="margin-bottom: 8px; font-size: 12px;">
+                        <span style="font-weight: 600; color: #374151; display: inline-block; width: 70px;">BSB:</span>
+                        <span style="color: #000; font-family: monospace; font-weight: 600;">${bank.bsb || 'Not specified'}</span>
+                    </div>
+                    <div style="font-size: 12px;">
+                        <span style="font-weight: 600; color: #374151; display: inline-block; width: 70px;">Account:</span>
+                        <span style="color: #000; font-family: monospace; font-weight: 600;">${bank.accNumber || 'Not specified'}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div style="text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; color: #6b7280; font-size: 11px;">
+            <p style="margin: 0;">Thank you for your business! </p>
+            <p style="margin: 4px 0 0 0;">Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+        </div>
+    </div>
+    `;
+
+    document.getElementById('invoiceOutput').innerHTML = html;
+}
+
+function downloadPDF() {
+    try {
+        // Validate all required fields before generating PDF
+        const validation = validateInvoiceCompletion();
+        if (!validation.isValid) {
+            highlightErrorFields(validation.errorFieldIds);
+            Swal.fire({
+                icon: 'error',
+                title: 'Invoice Incomplete',
+                html: `Please complete the following fields:<br><br><ul style="text-align: left; margin-top: 10px;">${validation.errors.map(error => `<li>${error}</li>`).join('')}</ul>`,
+                confirmButtonColor: '#1F4E79',
+                confirmButtonText: 'OK, I\'ll complete it'
+            });
+            return;
+        }
+        
+        const element = document.getElementById('invoiceOutput');
+        
+        // Check if jsPDF is loaded
+        if (typeof window.jspdf === 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'PDF Library Error',
+                text: 'PDF library not loaded. Please refresh the page and try again.',
+                confirmButtonColor: '#1F4E79'
+            });
+            return;
+        }
+        
+        // Show loading indicator for mobile users
+        Swal.fire({
+            title: 'Generating PDF...',
+            text: 'Please wait while we create your invoice PDF',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        
+        // Store original styles to restore later
+        const originalStyles = {
+            transform: element.style.transform,
+            width: element.style.width,
+            maxWidth: element.style.maxWidth,
+            fontSize: element.style.fontSize,
+            padding: element.style.padding
+        };
+        
+        // Temporarily apply desktop styles for consistent PDF generation
+        element.style.transform = 'none';
+        element.style.width = '100%';
+        element.style.maxWidth = '800px';
+        element.style.fontSize = '12px';
+        element.style.padding = '20px';
+        
+        // Also override any child element mobile styles temporarily
+        const childElements = element.querySelectorAll('*');
+        const childOriginalStyles = [];
+        
+        childElements.forEach((child, index) => {
+            childOriginalStyles[index] = {
+                transform: child.style.transform,
+                width: child.style.width,
+                maxWidth: child.style.maxWidth,
+                fontSize: child.style.fontSize,
+                padding: child.style.padding
+            };
+            
+            // Reset mobile-specific transforms and sizing
+            if (child.style.transform) child.style.transform = 'none';
+        });
+        
+        // Force layout recalculation
+        element.offsetHeight;
+        
+        // Use html2canvas to convert HTML to image first, then add to PDF
+        html2canvas(element, {
+            scale: 2.5, // Higher scale for better quality
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff',
+            width: 800, // Fixed width for consistent output
+            height: element.scrollHeight,
+            logging: false,
+            removeContainer: true,
+            imageTimeout: 30000,
+            letterRendering: true,
+            onclone: function(clonedDoc) {
+                // Ensure the cloned document uses desktop styles
+                const clonedElement = clonedDoc.getElementById('invoiceOutput');
+                if (clonedElement) {
+                    clonedElement.style.width = '800px';
+                    clonedElement.style.maxWidth = '800px';
+                    clonedElement.style.transform = 'none';
+                    clonedElement.style.fontSize = '12px';
+                    clonedElement.style.padding = '20px';
+                    
+                    // Remove all mobile media query effects from the clone
+                    const style = clonedDoc.createElement('style');
+                    style.textContent = `
+                        #invoiceOutput {
+                            width: 800px !important;
+                            max-width: 800px !important;
+                            transform: none !important;
+                            font-size: 12px !important;
+                            padding: 20px !important;
+                        }
+                        #invoiceOutput * {
+                            transform: none !important;
+                        }
+                        #invoiceOutput > div {
+                            padding: 20px !important;
+                        }
+                        @media (max-width: 768px) {
+                            #invoiceOutput {
+                                width: 800px !important;
+                                max-width: 800px !important;
+                                transform: none !important;
+                                font-size: 12px !important;
+                                padding: 20px !important;
+                            }
+                        }
+                    `;
+                    clonedDoc.head.appendChild(style);
+                }
+            }
+        }).then(canvas => {
+            // Restore original styles immediately after canvas generation
+            Object.keys(originalStyles).forEach(key => {
+                if (originalStyles[key] !== null && originalStyles[key] !== undefined) {
+                    element.style[key] = originalStyles[key];
+                } else {
+                    element.style[key] = '';
+                }
+            });
+            
+            // Restore child element styles
+            childElements.forEach((child, index) => {
+                Object.keys(childOriginalStyles[index]).forEach(key => {
+                    if (childOriginalStyles[index][key] !== null && childOriginalStyles[index][key] !== undefined) {
+                        child.style[key] = childOriginalStyles[index][key];
+                    } else {
+                        child.style[key] = '';
+                    }
+                });
+            });
+            const imgData = canvas.toDataURL('image/png', 1.0);
+            
+            // A4 dimensions in mm
+            const pdfWidth = 210;
+            const pdfHeight = 297;
+            const margin = 15; // Standard margins
+            const contentWidth = pdfWidth - (2 * margin); // 180mm usable width
+            const contentHeight = pdfHeight - (2 * margin); // 267mm usable height
+            
+            // Calculate scaling to fit A4 properly
+            const imgWidth = contentWidth;
+            const imgHeight = (canvas.height * contentWidth) / canvas.width;
+            
+            // Check if it fits on one page
+            if (imgHeight <= contentHeight) {
+                // Single page - add with optimal vertical positioning
+                const verticalOffset = Math.max(0, (contentHeight - imgHeight) / 6); // Small top offset for better appearance
+                doc.addImage(imgData, 'PNG', margin, margin + verticalOffset, imgWidth, imgHeight);
+            } else {
+                // Multi-page handling with continuation headers
+                let sourceY = 0;
+                let pageNumber = 1;
+                const pageHeight = contentHeight - 20; // Reserve space for continuation header
+                const sourceSliceHeight = (pageHeight * canvas.width) / contentWidth;
+                
+                while (sourceY < canvas.height) {
+                    const remainingHeight = canvas.height - sourceY;
+                    const actualSliceHeight = Math.min(sourceSliceHeight, remainingHeight);
+                    
+                    // Add continuation header for pages after the first
+                    if (pageNumber > 1) {
+                        doc.setFontSize(12);
+                        doc.setTextColor(79, 79, 79);
+                        doc.text(`Invoice ${document.getElementById('invoiceNumber').value || 'N/A'} - Page ${pageNumber} (Continued)`, margin, margin + 10);
+                        doc.setDrawColor(31, 78, 121);
+                        doc.line(margin, margin + 15, pdfWidth - margin, margin + 15);
+                    }
+                    
+                    // Create a canvas for this page slice
+                    const pageCanvas = document.createElement('canvas');
+                    pageCanvas.width = canvas.width;
+                    pageCanvas.height = actualSliceHeight;
+                    const pageCtx = pageCanvas.getContext('2d');
+                    
+                    // Fill with white background
+                    pageCtx.fillStyle = '#ffffff';
+                    pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+                    
+                    pageCtx.drawImage(canvas, 0, sourceY, canvas.width, actualSliceHeight, 0, 0, canvas.width, actualSliceHeight);
+                    
+                    const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
+                    const yPosition = pageNumber === 1 ? margin : margin + 20; // Account for continuation header
+                    const availableHeight = pageNumber === 1 ? pageHeight + 20 : pageHeight;
+                    
+                    doc.addImage(pageImgData, 'PNG', margin, yPosition, imgWidth, Math.min(availableHeight, (actualSliceHeight * contentWidth) / canvas.width));
+                    
+                    sourceY += actualSliceHeight;
+                    
+                    // Add new page if there's more content
+                    if (sourceY < canvas.height - 10) { // 10px threshold to avoid tiny slivers
+                        doc.addPage();
+                        pageNumber++;
+                    }
+                }
+            }
+            
+            // Generate filename with current date and invoice number
+            const invoiceNumber = document.getElementById('invoiceNumber').value || 'invoice';
+            const invoiceDate = document.getElementById('invoiceDate').value;
+            const today = new Date().toISOString().split('T')[0];
+            const filename = `${invoiceNumber}_${today}.pdf`;
+            
+            // Save invoice to history before generating PDF
+            saveInvoiceToHistory(invoiceNumber, invoiceDate);
+            
+            // Close loading indicator
+            Swal.close();
+            
+            // Save PDF with mobile-friendly approach
+            try {
+                doc.save(filename);
+                
+                // Show success message
+                Swal.fire({
+                    icon: 'success',
+                    title: 'PDF Generated Successfully!',
+                    html: `
+                        <div style="text-align: left; margin-top: 15px;">
+                            <p><strong>Invoice:</strong> ${invoiceNumber}</p>
+                            <p><strong>Date:</strong> ${invoiceDate}</p>
+                            <p><strong>Total:</strong> $${items.reduce((sum, item) => sum + item.price, 0).toFixed(2)}</p>
+                            <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                                The PDF has been downloaded with professional styling and formatting.
+                            </p>
+                        </div>
+                    `,
+                    timer: 4000,
+                    showConfirmButton: true,
+                    confirmButtonText: 'Great!',
+                    confirmButtonColor: '#10b981',
+                    toast: false,
+                    position: 'center'
+                });
+            } catch (saveError) {
+                console.error('Error saving PDF:', saveError);
+                
+                // Fallback for mobile browsers that may not support direct download
+                Swal.fire({
+                    icon: 'info',
+                    title: 'PDF Ready',
+                    html: `
+                        <p>Your PDF has been generated successfully!</p>
+                        <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+                            If the download didn't start automatically, you can try again or use a different browser.
+                        </p>
+                    `,
+                    confirmButtonText: 'Try Download Again',
+                    confirmButtonColor: '#1F4E79',
+                    showCancelButton: true,
+                    cancelButtonText: 'Close'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        try {
+                            doc.save(filename);
+                        } catch (retryError) {
+                            console.error('Retry download failed:', retryError);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Download Issue',
+                                text: 'There seems to be an issue with downloading on your device. Please try using a different browser.',
+                                confirmButtonColor: '#1F4E79'
+                            });
+                        }
+                    }
+                });
+            }
+            
+        }).catch(error => {
+            console.error('Error generating PDF:', error);
+            
+            // Restore original styles even if there's an error
+            Object.keys(originalStyles).forEach(key => {
+                if (originalStyles[key] !== null && originalStyles[key] !== undefined) {
+                    element.style[key] = originalStyles[key];
+                } else {
+                    element.style[key] = '';
+                }
+            });
+            
+            // Restore child element styles
+            childElements.forEach((child, index) => {
+                if (childOriginalStyles[index]) {
+                    Object.keys(childOriginalStyles[index]).forEach(key => {
+                        if (childOriginalStyles[index][key] !== null && childOriginalStyles[index][key] !== undefined) {
+                            child.style[key] = childOriginalStyles[index][key];
+                        } else {
+                            child.style[key] = '';
+                        }
+                    });
+                }
+            });
+            
+            Swal.close();
+            
+            Swal.fire({
+                icon: 'error',
+                title: 'PDF Generation Error',
+                text: 'There was an error generating the PDF. Please check your internet connection and try again.',
+                confirmButtonColor: '#1F4E79'
+            });
+        });
+        
+    } catch (error) {
+        console.error('PDF download error:', error);
+        
+        // Try to restore styles if element is available
+        if (typeof element !== 'undefined' && element) {
+            element.style.transform = '';
+            element.style.width = '';
+            element.style.maxWidth = '';
+            element.style.fontSize = '';
+            element.style.padding = '';
+        }
+        
+        Swal.close();
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Unexpected Error',
+            text: 'An unexpected error occurred. Please refresh the page and try again.',
+            confirmButtonColor: '#1F4E79'
+        });
+    }
+}
+
+loadSavedBankDetails();
+loadSavedAddresses();
+loadSavedCustomers();
+loadSavedBusinesses();
+updateItemsList();
+updateInvoice();
+updateInvoiceNumberHelper();
+
+// Set default invoice date to today
+document.getElementById('invoiceDate').value = new Date().toISOString().split('T')[0];
+</script>
+</body>
+</html>
