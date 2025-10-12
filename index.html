@@ -379,6 +379,73 @@
         border-bottom: 1px solid #e2e8f0;
         font-weight: 600;
         color: #1e293b;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+    
+    .format-switch {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 0.85rem;
+        color: #475569;
+    }
+    
+    .format-option {
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 600;
+    }
+    
+    .format-option.inactive {
+        color: #b8c4e2;
+    }
+    
+    .switch {
+        position: relative;
+        display: inline-block;
+        width: 52px;
+        height: 26px;
+    }
+    
+    .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background: #cbd5f5;
+        transition: all 0.3s ease;
+        border-radius: 999px;
+        box-shadow: inset 0 1px 4px rgba(15, 23, 42, 0.2);
+    }
+    
+    .slider::before {
+        position: absolute;
+        content: '';
+        height: 20px;
+        width: 20px;
+        left: 4px;
+        top: 3px;
+        background: white;
+        transition: all 0.3s ease;
+        border-radius: 50%;
+        box-shadow: 0 2px 4px rgba(15, 23, 42, 0.25);
+    }
+    
+    .switch input:checked + .slider {
+        background: linear-gradient(135deg, #2563eb, #1F4E79);
+    }
+    
+    .switch input:checked + .slider::before {
+        transform: translateX(24px);
     }
     
     #invoiceOutput {
@@ -402,6 +469,15 @@
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
         color-adjust: exact;
+    }
+
+    #invoiceOutput.legacy-mode {
+        padding: 20px 10px;
+        background: #eef2ff;
+    }
+
+    #invoiceOutput.legacy-mode > div {
+        margin: 0 auto;
     }
     
     #invoiceOutput table {
@@ -728,6 +804,17 @@
         
         .invoice-preview {
             border-radius: 10px;
+        }
+        
+        .preview-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        
+        .format-switch {
+            width: 100%;
+            justify-content: space-between;
         }
         
         #invoiceOutput {
@@ -1235,7 +1322,15 @@
         <div class="right-panel">
             <div class="invoice-preview">
                 <div class="preview-header">
-                    📄 Invoice Preview
+                    <span>Invoice Preview</span>
+                    <div class="format-switch" id="formatSwitch">
+                        <span class="format-option format-option--legacy inactive">Legacy</span>
+                        <label class="switch">
+                            <input type="checkbox" id="formatToggle" checked>
+                            <span class="slider"></span>
+                        </label>
+                        <span class="format-option format-option--modern">Modern</span>
+                    </div>
                 </div>
                 <div id="invoiceOutput"></div>
             </div>
@@ -1260,7 +1355,23 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
+let invoiceFormat = 'modern';
 let items = [];
+
+const formatToggle = document.getElementById('formatToggle');
+const legacyFormatLabel = document.querySelector('.format-option--legacy');
+const modernFormatLabel = document.querySelector('.format-option--modern');
+
+if (formatToggle) {
+    formatToggle.addEventListener('change', () => {
+        invoiceFormat = formatToggle.checked ? 'modern' : 'legacy';
+        syncFormatLabels();
+        updateInvoice();
+    });
+}
+
+syncFormatLabels();
+
 
 function saveBankDetails() {
     const bankDetails = {
@@ -2534,12 +2645,38 @@ function updateItemsList() {
         ${itemsHTML}
     `;
 }
+function syncFormatLabels() {
+    if (formatToggle) {
+        formatToggle.checked = invoiceFormat === 'modern';
+    }
+    if (legacyFormatLabel) {
+        legacyFormatLabel.classList.toggle('inactive', invoiceFormat !== 'legacy');
+    }
+    if (modernFormatLabel) {
+        modernFormatLabel.classList.toggle('inactive', invoiceFormat !== 'modern');
+    }
+}
+
+function formatDisplayDate(value) {
+    if (!value) {
+        return 'Not specified';
+    }
+    const parts = value.split('-');
+    if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    return value;
+}
+
+function formatCurrency(value) {
+    const numericValue = Number(value) || 0;
+    return numericValue.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 function updateInvoice() {
-    // Get current bank details instead of legacy bankDetails
     const currentBank = JSON.parse(localStorage.getItem('currentBankDetails'));
-    const bank = currentBank || {}; // Fallback to empty object if no bank details
-    
+    const bank = currentBank || {};
+
     const invoiceDate = document.getElementById('invoiceDate').value;
     const invoiceNumber = document.getElementById('invoiceNumber').value;
     const to = document.getElementById('to').value;
@@ -2547,19 +2684,109 @@ function updateInvoice() {
     const from = document.getElementById('from').value;
     const fromABN = document.getElementById('fromABN').value;
 
-    let total = items.reduce((sum, item) => sum + item.price, 0);
+    const total = items.reduce((sum, item) => sum + item.price, 0);
+    const totalFormatted = formatCurrency(total);
 
-    let html = `
+    const outputElement = document.getElementById('invoiceOutput');
+    if (!outputElement) {
+        return;
+    }
+
+    if (invoiceFormat === 'legacy') {
+        const formattedInvoiceDate = formatDisplayDate(invoiceDate);
+        const itemRows = items.map(item => `
+            <tr>
+                <td style="border: 1px solid #1F4E79; padding: 8px; font-size: 13px;">${item.date ? formatDisplayDate(item.date) : 'N/A'}</td>
+                <td style="border: 1px solid #1F4E79; padding: 8px; font-size: 13px;">${item.jobType || 'N/A'}</td>
+                <td style="border: 1px solid #1F4E79; padding: 8px; font-size: 13px;">${item.address || 'N/A'}</td>
+                <td style="border: 1px solid #1F4E79; padding: 8px; text-align: right; font-size: 13px;">$${formatCurrency(item.price)}</td>
+            </tr>
+        `).join('');
+
+        const fillerRows = Math.max(0, 6 - items.length);
+        const fillerHtml = Array.from({ length: fillerRows }).map(() => `
+            <tr>
+                <td style="border: 1px solid #1F4E79; padding: 8px; height: 28px;">&nbsp;</td>
+                <td style="border: 1px solid #1F4E79; padding: 8px;">&nbsp;</td>
+                <td style="border: 1px solid #1F4E79; padding: 8px;">&nbsp;</td>
+                <td style="border: 1px solid #1F4E79; padding: 8px;">&nbsp;</td>
+            </tr>
+        `).join('');
+
+        const emptyRow = `
+            <tr>
+                <td colspan="4" style="border: 1px solid #1F4E79; padding: 12px; text-align: center; font-style: italic; color: #475569; font-size: 13px;">No line items added</td>
+            </tr>
+        `;
+
+        const legacyBody = items.length ? itemRows + fillerHtml : emptyRow + fillerHtml;
+
+        const legacyTemplate = `
+        <div style="max-width: 700px; width: 100%; margin: 0 auto; font-family: 'Times New Roman', serif; color: #000; background: white; padding: 24px; box-sizing: border-box; border: 1px solid #cbd5f5;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
+                <div style="max-width: 60%;">
+                    <h2 style="margin: 0 0 12px 0; color: #1F4E79; font-size: 26px; font-weight: 700;">Tax Invoice</h2>
+                    <div style="font-size: 14px; line-height: 1.8;">
+                        <div style="font-weight: 700;">Invoice</div>
+                        <div><span style="display: inline-block; width: 130px; font-weight: 600;">Invoice Number:</span> ${invoiceNumber || 'Not specified'}</div>
+                        <div><span style="display: inline-block; width: 130px; font-weight: 600;">To:</span> ${to || 'Customer name not specified'}</div>
+                        <div><span style="display: inline-block; width: 130px; font-weight: 600;">From:</span> ${from || 'Business name not specified'}</div>
+                    </div>
+                </div>
+                <div style="font-size: 14px; line-height: 1.8; text-align: right;">
+                    <div><span style="font-weight: 600;">Date:</span> ${formattedInvoiceDate}</div>
+
+
+
+                    <div style="margin-top: 10px: 600;"></div>
+
+
+
+                    <div><span style="font-weight: 600;">ABN:</span> ${toABN || 'Not specified'}</div>
+                    <div><span style="font-weight: 600;">ABN:</span> ${fromABN || 'Not specified'}</div>
+                </div>
+            </div>
+            <table style="width: 100%; border: 1px solid #1F4E79; border-collapse: collapse; font-size: 13px;">
+                <thead>
+                    <tr style="background: #dbeafe;">
+                        <th style="border: 1px solid #1F4E79; padding: 8px; width: 18%; text-align: left;">Date</th>
+                        <th style="border: 1px solid #1F4E79; padding: 8px; width: 26%; text-align: left;">Job Type</th>
+                        <th style="border: 1px solid #1F4E79; padding: 8px; width: 38%; text-align: left;">Address</th>
+                        <th style="border: 1px solid #1F4E79; padding: 8px; width: 18%; text-align: right;">Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${legacyBody}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3" style="border: 1px solid #1F4E79; padding: 8px; text-align: right; font-weight: 700;">Total</td>
+                        <td style="border: 1px solid #1F4E79; padding: 8px; text-align: right; font-weight: 700;">$${totalFormatted}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <div style="margin-top: 24px; font-size: 13px; line-height: 1.8;">
+                <p style="margin: 0 0 6px 0; font-weight: 600;">Make all payments to,</p>
+                <p style="margin: 0;"><strong>Bank:</strong> ${bank.bank || 'Not specified'}</p>
+                <p style="margin: 0;"><strong>ACC Name:</strong> ${bank.accName || 'Not specified'}</p>
+                <p style="margin: 0;"><strong>BSB:</strong> ${bank.bsb || 'Not specified'}</p>
+                <p style="margin: 0;"><strong>ACC Number:</strong> ${bank.accNumber || 'Not specified'}</p>
+            </div>
+        </div>
+        `;
+
+        outputElement.className = 'legacy-mode';
+        outputElement.innerHTML = legacyTemplate;
+        return;
+    }
+
+    const modernTemplate = `
     <div style="max-width: 100%; width: 100%; margin: 0 auto; font-family: 'Segoe UI', Arial, sans-serif; color: #000; background: white; padding: 20px; box-sizing: border-box; page-break-after: auto;">
-        <!-- Header Section -->
         <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #1F4E79; padding-bottom: 15px;">
             <h2 style="margin: 0; font-size: 28px; color: #1F4E79; font-weight: bold; letter-spacing: 1px;">TAX INVOICE</h2>
             <div style="margin-top: 8px; font-size: 14px; color: #666;">Professional Invoice Document</div>
         </div>
-        
-        <!-- Invoice Info and Parties Section -->
         <div style="display: flex; justify-content: space-between; margin-bottom: 20px; gap: 20px;">
-            <!-- Left Column: Invoice Details -->
             <div style="width: 48%;">
                 <div style="background: #f8fafc; padding: 15px; border-radius: 6px; border-left: 4px solid #1F4E79;">
                     <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #1F4E79; font-weight: 600;">Invoice Details</h3>
@@ -2573,24 +2800,17 @@ function updateInvoice() {
                     </div>
                 </div>
             </div>
-            
-            <!-- Right Column: Payment Terms -->
             <div style="width: 48%;">
                 <div style="background: #f0f9ff; padding: 15px; border-radius: 6px; border-left: 4px solid #0ea5e9;">
                     <h3 style="margin: 0 0 12px 0; font-size: 16px; color: #0ea5e9; font-weight: 600;">Payment Summary</h3>
-                    <div style="margin-bottom: 8px; font-size: 13px;">
-                    </div>
                     <div style="font-size: 13px;">
                         <span style="font-weight: 600; color: #374151; display: inline-block; width: 60px;">Total:</span>
-                        <span style="color: #000; font-weight: bold; font-size: 18px;">$${total.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                        <span style="color: #000; font-weight: bold; font-size: 18px;">$${totalFormatted}</span>
                     </div>
                 </div>
             </div>
         </div>
-        
-        <!-- From and To Section -->
         <div style="display: flex; justify-content: space-between; margin-bottom: 20px; gap: 20px;">
-            <!-- From Section -->
             <div style="width: 48%;">
                 <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #1F4E79; font-weight: 600; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">FROM (Service Provider)</h3>
                 <div style="background: white; padding: 12px; border: 1px solid #e2e8f0; border-radius: 4px;">
@@ -2600,8 +2820,6 @@ function updateInvoice() {
                     </div>
                 </div>
             </div>
-            
-            <!-- To Section -->
             <div style="width: 48%;">
                 <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #1F4E79; font-weight: 600; border-bottom: 2px solid #e2e8f0; padding-bottom: 5px;">TO (Customer)</h3>
                 <div style="background: white; padding: 12px; border: 1px solid #e2e8f0; border-radius: 4px;">
@@ -2612,8 +2830,6 @@ function updateInvoice() {
                 </div>
             </div>
         </div>
-        
-        <!-- Line Items Table -->
         <div style="margin-bottom: 20px; page-break-inside: avoid;">
             <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #1F4E79; font-weight: 600;">Service Details</h3>
             <table style="width: 100%; border-collapse: collapse; font-size: 12px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden; page-break-inside: avoid;">
@@ -2631,7 +2847,7 @@ function updateInvoice() {
                         <td style="padding: 10px 8px; border-right: 1px solid #f1f5f9; color: #374151; font-size: 11px;">${item.date || 'N/A'}</td>
                         <td style="padding: 10px 8px; border-right: 1px solid #f1f5f9; color: #374151; font-weight: 500; font-size: 11px;">${item.jobType || 'N/A'}</td>
                         <td style="padding: 10px 8px; border-right: 1px solid #f1f5f9; color: #374151; font-size: 11px;">${item.address || 'N/A'}</td>
-                        <td style="padding: 10px 8px; text-align: right; color: #374151; font-weight: 600; font-size: 11px;">$${item.price.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td style="padding: 10px 8px; text-align: right; color: #374151; font-weight: 600; font-size: 11px;">$${formatCurrency(item.price)}</td>
                     </tr>
                     `).join('')}
                     ${items.length === 0 ? `
@@ -2643,13 +2859,11 @@ function updateInvoice() {
                 <tfoot>
                     <tr style="background: #f1f5f9; border-top: 2px solid #1F4E79;">
                         <td colspan="3" style="padding: 12px 8px; font-weight: 700; font-size: 14px; color: #1F4E79;">TOTAL AMOUNT</td>
-                        <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; color: #1F4E79;">$${total.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                        <td style="padding: 12px 8px; text-align: right; font-weight: 700; font-size: 16px; color: #1F4E79;">$${totalFormatted}</td>
                     </tr>
                 </tfoot>
             </table>
         </div>
-        
-        <!-- Payment Information -->
         <div style="background: #f0f9ff; padding: 18px; border-radius: 6px; border: 1px solid #bae6fd; margin-bottom: 18px;">
             <h3 style="margin: 0 0 15px 0; font-size: 16px; color: #0369a1; font-weight: 600;">Payment Information</h3>
             <div style="display: flex; justify-content: space-between; gap: 15px;">
@@ -2675,8 +2889,6 @@ function updateInvoice() {
                 </div>
             </div>
         </div>
-        
-        <!-- Footer -->
         <div style="text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; color: #6b7280; font-size: 11px;">
             <p style="margin: 0;">Thank you for your business! </p>
             <p style="margin: 4px 0 0 0;">Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
@@ -2684,7 +2896,8 @@ function updateInvoice() {
     </div>
     `;
 
-    document.getElementById('invoiceOutput').innerHTML = html;
+    outputElement.className = 'modern-mode';
+    outputElement.innerHTML = modernTemplate;
 }
 
 function downloadPDF() {
