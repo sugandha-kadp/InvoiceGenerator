@@ -2725,23 +2725,22 @@ function updateInvoice() {
         <div style="max-width: 700px; width: 100%; margin: 0 auto; font-family: 'Times New Roman', serif; color: #000; background: white; padding: 24px; box-sizing: border-box; border: 1px solid #cbd5f5;">
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px;">
                 <div style="max-width: 60%;">
-                    <h2 style="margin: 0 0 12px 0; color: #1F4E79; font-size: 26px; font-weight: 700;">Tax Invoice</h2>
+                    <h2 style="margin: 0 0 12px 0; color: #1F4E79; font-size: 26px; font-weight: 700; text-align: left;">Tax Invoice</h2>
                     <div style="font-size: 14px; line-height: 1.8;">
                         <div style="font-weight: 700;">Invoice</div>
                         <div><span style="display: inline-block; width: 130px; font-weight: 600;">Invoice Number:</span> ${invoiceNumber || 'Not specified'}</div>
-                        <div><span style="display: inline-block; width: 130px; font-weight: 600;">To:</span> ${to || 'Customer name not specified'}</div>
-                        <div><span style="display: inline-block; width: 130px; font-weight: 600;">From:</span> ${from || 'Business name not specified'}</div>
                     </div>
                 </div>
-                <div style="font-size: 14px; line-height: 1.8; text-align: right;">
+                <div style="font-size: 14px; line-height: 1.8; text-align: right; min-width: 180px;">
                     <div><span style="font-weight: 600;">Date:</span> ${formattedInvoiceDate}</div>
-
-
-
-                    <div style="margin-top: 10px: 600;"></div>
-
-
-
+                </div>
+            </div>
+            <div style="font-size: 14px; line-height: 1.8; display: flex; justify-content: space-between; gap: 20px; margin-bottom: 16px;">
+                <div style="flex: 1; max-width: 60%;">
+                    <div><span style="display: inline-block; width: 50px; font-weight: 600;">To:</span> ${to || 'Customer name not specified'}</div>
+                    <div><span style="display: inline-block; width: 50px; font-weight: 600;">From:</span> ${from || 'Business name not specified'}</div>
+                </div>
+                <div style="min-width: 180px; text-align: right;">
                     <div><span style="font-weight: 600;">ABN:</span> ${toABN || 'Not specified'}</div>
                     <div><span style="font-weight: 600;">ABN:</span> ${fromABN || 'Not specified'}</div>
                 </div>
@@ -2782,9 +2781,9 @@ function updateInvoice() {
 
     const modernTemplate = `
     <div style="max-width: 100%; width: 100%; margin: 0 auto; font-family: 'Segoe UI', Arial, sans-serif; color: #000; background: white; padding: 20px; box-sizing: border-box; page-break-after: auto;">
-        <div style="text-align: center; margin-bottom: 20px; border-bottom: 3px solid #1F4E79; padding-bottom: 15px;">
-            <h2 style="margin: 0; font-size: 28px; color: #1F4E79; font-weight: bold; letter-spacing: 1px;">TAX INVOICE</h2>
-            <div style="margin-top: 8px; font-size: 14px; color: #666;">Professional Invoice Document</div>
+        <div style="margin-bottom: 20px; border-bottom: 3px solid #1F4E79; padding-bottom: 15px;">
+            <h2 style="margin: 0; font-size: 28px; color: #1F4E79; font-weight: bold; letter-spacing: 1px; text-align: left;">TAX INVOICE</h2>
+            <div style="margin-top: 8px; font-size: 14px; color: #666; text-align: left;">Professional Invoice Document</div>
         </div>
         <div style="display: flex; justify-content: space-between; margin-bottom: 20px; gap: 20px;">
             <div style="width: 48%;">
