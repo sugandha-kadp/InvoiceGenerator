@@ -455,12 +455,12 @@
         line-height: 1.4;
         padding: 0;
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        min-height: 400px;
+        min-height: 297mm;
         print-color-adjust: exact;
         -webkit-print-color-adjust: exact;
         color-adjust: exact;
         width: 100%;
-        max-width: 800px;
+        max-width: 210mm;
         margin: 0 auto;
         box-sizing: border-box;
     }
@@ -2941,22 +2941,36 @@ function downloadPDF() {
         
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
+
+        const MM_TO_PX = 3.7795275591;
+        const A4_WIDTH_MM = 210;
+        const A4_HEIGHT_MM = 297;
+        const PAGE_PADDING_MM = 8;
+
+        const a4WidthPx = Math.round(A4_WIDTH_MM * MM_TO_PX);
+        const a4HeightPx = Math.round(A4_HEIGHT_MM * MM_TO_PX);
+        const pagePaddingPx = Math.round(PAGE_PADDING_MM * MM_TO_PX);
         
         // Store original styles to restore later
         const originalStyles = {
             transform: element.style.transform,
             width: element.style.width,
             maxWidth: element.style.maxWidth,
+            minHeight: element.style.minHeight,
             fontSize: element.style.fontSize,
-            padding: element.style.padding
+            padding: element.style.padding,
+            boxSizing: element.style.boxSizing
         };
         
-        // Temporarily apply desktop styles for consistent PDF generation
+        // Temporarily apply A4-aligned styles for consistent PDF generation
         element.style.transform = 'none';
-        element.style.width = '100%';
-        element.style.maxWidth = '800px';
+        element.style.width = `${a4WidthPx}px`;
+        element.style.maxWidth = `${a4WidthPx}px`;
+        const targetCanvasHeightPx = Math.max(a4HeightPx, element.scrollHeight);
+        element.style.minHeight = `${targetCanvasHeightPx}px`;
         element.style.fontSize = '12px';
-        element.style.padding = '20px';
+        element.style.padding = `${pagePaddingPx}px`;
+        element.style.boxSizing = 'border-box';
         
         // Also override any child element mobile styles temporarily
         const childElements = element.querySelectorAll('*');
@@ -2977,15 +2991,20 @@ function downloadPDF() {
         
         // Force layout recalculation
         element.offsetHeight;
+
+        const targetHeightPx = Math.max(targetCanvasHeightPx, element.scrollHeight);
+        const captureScale = Math.min(2, Math.max(1.5, window.devicePixelRatio || 1.5));
         
         // Use html2canvas to convert HTML to image first, then add to PDF
         html2canvas(element, {
-            scale: 2.5, // Higher scale for better quality
+            scale: captureScale, // Higher scale for better quality
             useCORS: true,
             allowTaint: true,
             backgroundColor: '#ffffff',
-            width: 800, // Fixed width for consistent output
-            height: element.scrollHeight,
+            width: a4WidthPx,
+            height: targetHeightPx,
+            windowWidth: a4WidthPx,
+            windowHeight: targetHeightPx,
             logging: false,
             removeContainer: true,
             imageTimeout: 30000,
@@ -2994,35 +3013,40 @@ function downloadPDF() {
                 // Ensure the cloned document uses desktop styles
                 const clonedElement = clonedDoc.getElementById('invoiceOutput');
                 if (clonedElement) {
-                    clonedElement.style.width = '800px';
-                    clonedElement.style.maxWidth = '800px';
+                    clonedElement.style.width = `${a4WidthPx}px`;
+                    clonedElement.style.maxWidth = `${a4WidthPx}px`;
+                    clonedElement.style.minHeight = `${targetHeightPx}px`;
                     clonedElement.style.transform = 'none';
                     clonedElement.style.fontSize = '12px';
-                    clonedElement.style.padding = '20px';
+                    clonedElement.style.padding = `${pagePaddingPx}px`;
+                    clonedElement.style.boxSizing = 'border-box';
                     
                     // Remove all mobile media query effects from the clone
                     const style = clonedDoc.createElement('style');
                     style.textContent = `
                         #invoiceOutput {
-                            width: 800px !important;
-                            max-width: 800px !important;
+                            width: ${a4WidthPx}px !important;
+                            max-width: ${a4WidthPx}px !important;
+                            min-height: ${targetHeightPx}px !important;
                             transform: none !important;
                             font-size: 12px !important;
-                            padding: 20px !important;
+                            padding: ${pagePaddingPx}px !important;
+                            box-sizing: border-box !important;
                         }
                         #invoiceOutput * {
                             transform: none !important;
                         }
                         #invoiceOutput > div {
-                            padding: 20px !important;
+                            padding: ${pagePaddingPx}px !important;
                         }
                         @media (max-width: 768px) {
                             #invoiceOutput {
-                                width: 800px !important;
-                                max-width: 800px !important;
+                                width: ${a4WidthPx}px !important;
+                                max-width: ${a4WidthPx}px !important;
+                                min-height: ${targetHeightPx}px !important;
                                 transform: none !important;
                                 font-size: 12px !important;
-                                padding: 20px !important;
+                                padding: ${pagePaddingPx}px !important;
                             }
                         }
                     `;
@@ -3049,68 +3073,51 @@ function downloadPDF() {
                     }
                 });
             });
-            const imgData = canvas.toDataURL('image/png', 1.0);
+            const imgData = canvas.toDataURL('image/jpeg', 0.85);
             
-            // A4 dimensions in mm
-            const pdfWidth = 210;
-            const pdfHeight = 297;
-            const margin = 15; // Standard margins
-            const contentWidth = pdfWidth - (2 * margin); // 180mm usable width
-            const contentHeight = pdfHeight - (2 * margin); // 267mm usable height
+            const pdfWidth = doc.internal.pageSize.getWidth();
+            const pdfHeight = doc.internal.pageSize.getHeight();
+            const pdfScale = pdfWidth / canvas.width;
+            const pageHeightPx = pdfHeight / pdfScale;
+            const heightFitsOnSinglePage = canvas.height <= pageHeightPx + 1; // Allow a tiny tolerance
             
-            // Calculate scaling to fit A4 properly
-            const imgWidth = contentWidth;
-            const imgHeight = (canvas.height * contentWidth) / canvas.width;
-            
-            // Check if it fits on one page
-            if (imgHeight <= contentHeight) {
-                // Single page - add with optimal vertical positioning
-                const verticalOffset = Math.max(0, (contentHeight - imgHeight) / 6); // Small top offset for better appearance
-                doc.addImage(imgData, 'PNG', margin, margin + verticalOffset, imgWidth, imgHeight);
+            if (heightFitsOnSinglePage) {
+                const renderedHeightMm = canvas.height * pdfScale;
+                doc.addImage(imgData, 'JPEG', 0, 0, pdfWidth, renderedHeightMm);
             } else {
-                // Multi-page handling with continuation headers
-                let sourceY = 0;
-                let pageNumber = 1;
-                const pageHeight = contentHeight - 20; // Reserve space for continuation header
-                const sourceSliceHeight = (pageHeight * canvas.width) / contentWidth;
+                let drawnHeightPx = 0;
                 
-                while (sourceY < canvas.height) {
-                    const remainingHeight = canvas.height - sourceY;
-                    const actualSliceHeight = Math.min(sourceSliceHeight, remainingHeight);
+                while (drawnHeightPx < canvas.height) {
+                    const sliceHeightPx = Math.min(pageHeightPx, canvas.height - drawnHeightPx);
                     
-                    // Add continuation header for pages after the first
-                    if (pageNumber > 1) {
-                        doc.setFontSize(12);
-                        doc.setTextColor(79, 79, 79);
-                        doc.text(`Invoice ${document.getElementById('invoiceNumber').value || 'N/A'} - Page ${pageNumber} (Continued)`, margin, margin + 10);
-                        doc.setDrawColor(31, 78, 121);
-                        doc.line(margin, margin + 15, pdfWidth - margin, margin + 15);
-                    }
-                    
-                    // Create a canvas for this page slice
                     const pageCanvas = document.createElement('canvas');
                     pageCanvas.width = canvas.width;
-                    pageCanvas.height = actualSliceHeight;
+                    pageCanvas.height = sliceHeightPx;
                     const pageCtx = pageCanvas.getContext('2d');
                     
-                    // Fill with white background
                     pageCtx.fillStyle = '#ffffff';
                     pageCtx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+                    pageCtx.drawImage(
+                        canvas,
+                        0,
+                        drawnHeightPx,
+                        canvas.width,
+                        sliceHeightPx,
+                        0,
+                        0,
+                        canvas.width,
+                        sliceHeightPx
+                    );
                     
-                    pageCtx.drawImage(canvas, 0, sourceY, canvas.width, actualSliceHeight, 0, 0, canvas.width, actualSliceHeight);
+                    const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.85);
+                    const sliceHeightMm = sliceHeightPx * pdfScale;
                     
-                    const pageImgData = pageCanvas.toDataURL('image/png', 1.0);
-                    const yPosition = pageNumber === 1 ? margin : margin + 20; // Account for continuation header
-                    const availableHeight = pageNumber === 1 ? pageHeight + 20 : pageHeight;
+                    doc.addImage(pageImgData, 'JPEG', 0, 0, pdfWidth, sliceHeightMm);
                     
-                    doc.addImage(pageImgData, 'PNG', margin, yPosition, imgWidth, Math.min(availableHeight, (actualSliceHeight * contentWidth) / canvas.width));
+                    drawnHeightPx += sliceHeightPx;
                     
-                    sourceY += actualSliceHeight;
-                    
-                    // Add new page if there's more content
-                    if (sourceY < canvas.height - 10) { // 10px threshold to avoid tiny slivers
+                    if (drawnHeightPx < canvas.height - 0.5) {
                         doc.addPage();
-                        pageNumber++;
                     }
                 }
             }
